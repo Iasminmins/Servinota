@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Servinota — Emissão e gestão de NFS-e para escritórios contábeis.",
   "private": true,
+  "type": "commonjs",
   "main": "src/server.js",
   "scripts": {
     "start": "node --no-warnings=ExperimentalWarning src/server.js",
@@ -12,7 +13,7 @@
     "test:assinatura": "node scripts/teste-assinatura.js"
   },
   "engines": {
-    "node": ">=22.13"
+    "node": "22.x"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

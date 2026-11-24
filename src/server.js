@@ -4,8 +4,6 @@ const session = require('express-session');
 const config = require('./config');
 const SqliteStore = require('./sessao');
 const mw = require('./middleware');
-const { iniciarFila } = require('./services/emissao');
-const { iniciarAgendador } = require('./services/recorrencia');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -68,15 +66,23 @@ app.use((err, req, res, next) => {
   res.status(500).render('erro', { titulo: 'Erro', msg, detalhe: process.env.NODE_ENV === 'production' ? null : err.message });
 });
 
-iniciarFila();
-iniciarAgendador();
+// A Vercel importa este app como função. Fila e agendador permanecem ativos
+// apenas no servidor contínuo local, pois funções serverless não ficam ligadas.
+if (require.main === module) {
+  const { iniciarFila } = require('./services/emissao');
+  const { iniciarAgendador } = require('./services/recorrencia');
+  iniciarFila();
+  iniciarAgendador();
 
-const servidor = app.listen(config.port, () => {
-  console.log(`Servinota rodando em ${config.baseUrl}`);
-  if (config.semLogin) console.warn('ATENÇÃO: SEM_LOGIN=1 ativo, qualquer pessoa entra como administrador. Tire do .env antes de publicar.');
-});
-servidor.on('error', e => {
-  if (e.code === 'EADDRINUSE') console.error(`A porta ${config.port} já está em uso. Troque PORT no arquivo .env.`);
-  else console.error(e);
-  process.exit(1);
-});
+  const servidor = app.listen(config.port, () => {
+    console.log(`Servinota rodando em ${config.baseUrl}`);
+    if (config.semLogin) console.warn('ATENÇÃO: SEM_LOGIN=1 ativo, qualquer pessoa entra como administrador. Tire do .env antes de publicar.');
+  });
+  servidor.on('error', e => {
+    if (e.code === 'EADDRINUSE') console.error(`A porta ${config.port} já está em uso. Troque PORT no arquivo .env.`);
+    else console.error(e);
+    process.exit(1);
+  });
+}
+
+module.exports = app;

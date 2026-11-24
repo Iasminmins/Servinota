@@ -72,3 +72,7 @@ data/                banco (emissor.db)  <- fazer backup
 ## Deploy barato
 
 Uma VPS simples (1 GB de RAM já basta) com Node, rodando via `pm2 start npm -- start`, atrás de um Nginx ou Caddy com HTTPS. Coloque `BASE_URL=https://seudominio` no `.env`. Faça backup diário da pasta `data/` e do `.env`.
+
+### Vercel (somente demonstração)
+
+O app também pode ser carregado como função Express na Vercel. Nesse modo, o SQLite fica em `/tmp`, que é temporário e isolado por instância; sessões, contas e notas podem sumir ou não aparecer em outra instância. Fila de emissão e recorrências agendadas exigem um processo contínuo. Use VPS para operação real ou migre para banco e tarefas persistentes antes de usar com dados reais.
