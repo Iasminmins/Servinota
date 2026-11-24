@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Minha conta</h1>
+    <p class="subtitulo">Seus dados de acesso e preferências.</p>
+  </div>
+</div>
+<div class="grade g2" style="max-width:920px">
+  <div class="card">
+    <div class="card-corpo">
+      <div class="flex" style="gap:14px;margin-bottom:18px">
+        <span class="avatar" style="width:52px;height:52px;font-size:18px"><%= iniciais %></span>
+        <div><strong style="display:block;font-size:16px"><%= user.nome %></strong><span class="muted"><%= user.email %></span></div>
+      </div>
+      <dl class="dados">
+        <dt>Perfil</dt><dd><%= { admin: 'Administrador', operador: 'Operador', cliente: 'Cliente' }[user.papel] %></dd>
+        <dt>Escritório</dt><dd><%= escritorioNome %></dd>
+        <dt>Tema</dt><dd><button type="button" class="btn btn-sm" data-tema-toggle><%- ic('lua', 14) %> <span data-tema-txt>Modo escuro</span></button></dd>
+      </dl>
+    </div>
+  </div>
+  <form class="card" method="post" action="/minha-conta" data-validar>
+    <div class="card-cab"><div><h2>Trocar senha</h2><p>Mínimo de 8 caracteres</p></div></div>
+    <div class="card-corpo">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="campo"><label class="rotulo">Senha atual</label><input type="password" name="atual" required autocomplete="current-password"></div>
+      <div class="campo"><label class="rotulo">Nova senha</label><input type="password" name="nova" minlength="8" required autocomplete="new-password"></div>
+      <div class="campo"><label class="rotulo">Repita a nova senha</label><input type="password" name="nova2" minlength="8" required autocomplete="new-password"></div>
+      <button class="btn btn-pri"><%- ic('chave') %><%- ic('carregando', 16, 'giro') %> Salvar senha</button>
+    </div>
+  </form>
+</div>
+<%- include('partials/footer') %>

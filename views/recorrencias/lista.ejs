@@ -1,0 +1,71 @@
+<%- include('../partials/header') %>
+<% const ativas = recs.filter(r => r.ativo); const geradas = ativas.filter(r => r.ultima_competencia === mesAtual).length; %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Emissão recorrente</h1>
+    <p class="subtitulo">Notas emitidas sozinhas todo mês, no dia escolhido. A verificação roda diariamente às 7h.</p>
+  </div>
+  <div class="acoes"><a class="btn btn-pri" href="/recorrencias/nova"><%- ic('plus') %> Nova recorrência</a></div>
+</div>
+
+<div class="grade g3 mb">
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Recorrências ativas</span><span class="metrica-ic cor-pri"><%- ic('recorrente', 18) %></span></div>
+    <div class="metrica-valor"><%= ativas.length %></div>
+    <div class="metrica-rodape"><%= recs.length - ativas.length %> pausada<%= recs.length - ativas.length === 1 ? '' : 's' %></div>
+  </div>
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Valor mensal</span><span class="metrica-ic cor-ok"><%- ic('carteira', 18) %></span></div>
+    <div class="metrica-valor"><%= u.fmtMoeda(totalMensal) %></div>
+    <div class="metrica-rodape">Soma das ativas</div>
+  </div>
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Geradas este mês</span><span class="metrica-ic cor-info"><%- ic('ok', 18) %></span></div>
+    <div class="metrica-valor"><%= geradas %> <span style="font-size:15px;color:var(--texto-3);font-weight:500">de <%= ativas.length %></span></div>
+    <div class="metrica-rodape"><div class="barra-prog" style="flex:1;margin:0"><div style="width:<%= ativas.length ? Math.round(geradas / ativas.length * 100) : 0 %>%"></div></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <% if (!recs.length) { %>
+    <%- include('../partials/vazio', { icone: 'recorrente', tituloVazio: 'Nenhuma recorrência', texto: 'Ideal para honorários, mensalidades e contratos fixos: configure uma vez e a nota sai todo mês.', acaoHref: '/recorrencias/nova', acaoTxt: 'Criar recorrência' }) %>
+  <% } else { %>
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Dia</th><th>Tomador</th><th>Descrição</th><th class="num">Valor</th><th>Este mês</th><th><span class="sr">Ações</span></th></tr></thead>
+    <tbody>
+    <% recs.forEach(r => { %>
+      <tr class="<%= r.ativo ? '' : 'inativo' %>">
+        <td data-rot="Dia" class="esconder-mob"><div class="dia"><small>dia</small><strong><%= r.dia_mes %></strong></div></td>
+        <td class="td-titulo"><span class="pri"><%= r.tomador_nome %></span><span class="sec"><%= r.razao_social %> · dia <%= r.dia_mes %></span></td>
+        <td data-rot="Descrição"><span title="<%= r.descricao %>"><%= r.descricao.length > 60 ? r.descricao.slice(0, 60) + '…' : r.descricao %></span></td>
+        <td class="num" data-rot="Valor"><strong style="font-weight:600"><%= u.fmtMoeda(r.valor) %></strong></td>
+        <td data-rot="Este mês">
+          <% if (!r.ativo) { %><span class="badge cinza">Pausada</span>
+          <% } else if (r.ultima_competencia === mesAtual) { %><span class="badge verde">Gerada</span>
+          <% } else { %><span class="badge pri">Agendada</span><% } %>
+        </td>
+        <td class="acoes-linha">
+          <details class="menu-acoes">
+            <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Mais ações"><%- ic('mais') %></summary>
+            <div class="menu-pop">
+              <form method="post" action="/recorrencias/<%= r.id %>/gerar" data-confirma="Gerar e emitir uma nota desta recorrência agora?">
+                <input type="hidden" name="_csrf" value="<%= csrf %>"><button data-livre><%- ic('raio') %> Emitir agora</button>
+              </form>
+              <a href="/recorrencias/<%= r.id %>/editar"><%- ic('editar') %> Editar</a>
+              <form method="post" action="/recorrencias/<%= r.id %>/ativo">
+                <input type="hidden" name="_csrf" value="<%= csrf %>"><button data-livre><%- ic(r.ativo ? 'pausar' : 'play') %> <%= r.ativo ? 'Pausar' : 'Reativar' %></button>
+              </form>
+              <hr>
+              <form method="post" action="/recorrencias/<%= r.id %>/excluir" data-confirma="Excluir esta recorrência? As notas já emitidas não são afetadas.">
+                <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="perigo" data-livre><%- ic('lixo') %> Excluir</button>
+              </form>
+            </div>
+          </details>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

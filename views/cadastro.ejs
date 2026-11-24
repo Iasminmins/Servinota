@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><%- include('partials/head') %></head>
+<body>
+<div class="tela-auth">
+  <%- include('partials/auth-marca') %>
+  <main class="auth-form">
+    <div class="auth-caixa" style="max-width:420px">
+      <div class="auth-logo-mobile"><%- include('partials/logo', { href: '/login', idLogo: 'mob' }) %></div>
+      <h1>Criar conta</h1>
+      <p class="subtitulo">Cadastre seu escritório. Você será o administrador.</p>
+      <% (flash || []).forEach(f => { %><div class="alerta <%= f.tipo %>"><%- ic('erro', 16) %><div class="alerta-corpo"><%= f.msg %></div></div><% }) %>
+      <form method="post" action="/cadastro" data-validar>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo"><label class="rotulo">Nome do escritório <span class="obrig">*</span></label><input type="text" name="escritorio" value="<%= dados.escritorio || '' %>" required data-msg="Informe o nome do escritório."></div>
+        <div class="campo"><label class="rotulo">CNPJ do escritório</label><input type="text" name="cnpj" value="<%= dados.cnpj || '' %>" data-doc placeholder="Opcional" inputmode="numeric"></div>
+        <div class="campo"><label class="rotulo">Seu nome <span class="obrig">*</span></label><input type="text" name="nome" value="<%= dados.nome || '' %>" required data-msg="Informe seu nome."></div>
+        <div class="campo"><label class="rotulo">E-mail <span class="obrig">*</span></label><input type="email" name="email" value="<%= dados.email || '' %>" required data-msg="Informe seu e-mail." autocomplete="username"></div>
+        <div class="linha-form c2">
+          <div class="campo"><label class="rotulo">Senha <span class="obrig">*</span></label><input type="password" name="senha" minlength="8" required autocomplete="new-password"></div>
+          <div class="campo"><label class="rotulo">Repita a senha <span class="obrig">*</span></label><input type="password" name="senha2" minlength="8" required autocomplete="new-password"></div>
+        </div>
+        <button class="btn btn-pri btn-lg btn-bloco"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> <span>Criar conta</span></button>
+      </form>
+      <p class="rodape">Já tem conta? <a href="/login">Entrar</a> · <a href="/produto">Conheça a plataforma</a></p>
+    </div>
+  </main>
+</div>
+<script src="/static/js/app.js?v=2"></script>
+</body>
+</html>

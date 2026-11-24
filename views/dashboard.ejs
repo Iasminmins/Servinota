@@ -1,0 +1,165 @@
+<%- include('partials/header') %>
+<%
+  const nomeMes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const mesTxt = nomeMes[Number(mes.slice(5, 7)) - 1] + ' de ' + mes.slice(0, 4);
+  const curto = v => v >= 1e6 ? 'R$ ' + u.fmtNum(v / 1e6, 1) + 'M' : v >= 1e3 ? 'R$ ' + u.fmtNum(v / 1e3, v >= 1e4 ? 0 : 1) + 'k' : 'R$ ' + u.fmtNum(v, 0);
+  const varHtml = (v) => {
+    if (v === null) return '<span class="var sobe">' + ic('sobe', 12) + ' novo</span>';
+    if (v === 0) return '<span class="var neutra">0%</span>';
+    return '<span class="var ' + (v > 0 ? 'sobe' : 'desce') + '">' + ic(v > 0 ? 'sobe' : 'desce', 12) + ' ' + u.fmtNum(Math.abs(v), 1) + '%</span>';
+  };
+  const primeiroNome = String(user.nome).split(' ')[0];
+%>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Olá, <%= primeiroNome %></h1>
+    <p class="subtitulo">Resumo de <%= mesTxt %> em todas as empresas do escritório.</p>
+  </div>
+  <div class="acoes">
+    <a class="btn" href="/importacao"><%- ic('upload') %> Importar planilha</a>
+    <a class="btn btn-pri" href="/notas/nova"><%- ic('emitir') %> Emitir nota</a>
+  </div>
+</div>
+
+<% if (!metricas.empresas) { %>
+  <div class="alerta info"><%- ic('info', 18) %><div class="alerta-corpo"><strong>Comece por aqui:</strong> cadastre a primeira empresa cliente para poder emitir notas. <a href="/empresas/nova">Cadastrar empresa</a></div></div>
+<% } %>
+<% certVencendo.forEach(c => { %>
+  <div class="alerta aviso"><%- ic('escudo', 18) %><div class="alerta-corpo">
+    Certificado digital de <a href="/empresas/<%= c.id %>?aba=certificado"><%= c.razao_social %></a>
+    <%= c.cert_validade < u.hojeISO() ? 'venceu' : 'vence' %> em <%= u.fmtData(c.cert_validade) %>. Sem ele as notas dessa empresa não são emitidas.
+  </div></div>
+<% }) %>
+
+<div class="grade g5 mb">
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Notas emitidas</span><span class="metrica-ic cor-pri"><%- ic('nota', 18) %></span></div>
+    <div class="metrica-valor"><%= metricas.emitidas.valor %></div>
+    <div class="metrica-rodape"><%- varHtml(metricas.emitidas.var) %> <span class="vs">vs. mês anterior</span></div>
+  </div>
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Valor emitido</span><span class="metrica-ic cor-ok"><%- ic('carteira', 18) %></span></div>
+    <div class="metrica-valor" title="<%= u.fmtMoeda(metricas.total.valor) %>"><%= u.fmtMoeda(metricas.total.valor) %></div>
+    <div class="metrica-rodape"><%- varHtml(metricas.total.var) %> <span class="vs">vs. mês anterior</span></div>
+  </div>
+  <a class="metrica <%= metricas.erros ? 'perigo' : '' %>" href="/notas?status=erro" style="color:inherit;text-decoration:none">
+    <div class="metrica-topo"><span class="metrica-rot">Com erro</span><span class="metrica-ic <%= metricas.erros ? 'cor-erro' : 'cor-neutra' %>"><%- ic('alerta', 18) %></span></div>
+    <div class="metrica-valor"><%= metricas.erros %></div>
+    <div class="metrica-rodape"><%= metricas.erros ? 'Precisam de atenção →' : 'Nenhuma pendência' %></div>
+  </a>
+  <div class="metrica">
+    <div class="metrica-topo"><span class="metrica-rot">Na fila</span><span class="metrica-ic cor-info"><%- ic('relogio', 18) %></span></div>
+    <div class="metrica-valor"><%= metricas.fila %></div>
+    <div class="metrica-rodape"><%= metricas.fila ? 'Transmitindo agora' : 'Fila vazia' %></div>
+  </div>
+  <a class="metrica" href="/empresas" style="color:inherit;text-decoration:none">
+    <div class="metrica-topo"><span class="metrica-rot">Empresas ativas</span><span class="metrica-ic cor-roxo"><%- ic('empresa', 18) %></span></div>
+    <div class="metrica-valor"><%= metricas.empresas %></div>
+    <div class="metrica-rodape"><%= metricas.empresasProd %> em produção</div>
+  </a>
+</div>
+
+<div class="grade g-2-1">
+  <div>
+    <div class="card">
+      <div class="card-cab">
+        <div><h2>Valor emitido por mês</h2><p>Últimos 6 meses · notas autorizadas</p></div>
+        <% if (metricas.ticket) { %><span class="legenda">Ticket médio <strong class="num" style="color:var(--texto)"><%= u.fmtMoeda(metricas.ticket) %></strong></span><% } %>
+      </div>
+      <div class="card-corpo">
+        <%
+          const W = 640, H = 240, pl = 56, pr = 8, pt = 12, pb = 30;
+          const maxBruto = Math.max(...meses.map(m => m.total), 0);
+          let passo = 1;
+          if (maxBruto > 0) { const mag = Math.pow(10, Math.floor(Math.log10(maxBruto / 4))); passo = [1, 2, 2.5, 5, 10].map(f => f * mag).find(s => s * 4 >= maxBruto) || mag * 10; }
+          else passo = 250;
+          const topo = passo * 4;
+          const ah = H - pt - pb, aw = W - pl - pr, slot = aw / meses.length, bw = Math.min(44, slot * 0.5);
+          const y = v => pt + ah - (v / topo) * ah;
+        %>
+        <div class="grafico" data-altura="<%= H %>">
+          <svg viewBox="0 0 <%= W %> <%= H %>" role="img" aria-label="Gráfico de valor emitido nos últimos 6 meses">
+            <% for (let i = 0; i <= 4; i++) { const v = passo * i, yy = y(v); %>
+              <line class="grade-linha" x1="<%= pl %>" x2="<%= W - pr %>" y1="<%= yy %>" y2="<%= yy %>" style="<%= i === 0 ? 'stroke-dasharray:0' : '' %>"/>
+              <text class="eixo-txt eixo-y" x="<%= pl - 10 %>" y="<%= yy + 4 %>" text-anchor="end"><%= curto(v) %></text>
+            <% } %>
+            <% meses.forEach((m, i) => {
+                 const cx = pl + slot * i + slot / 2, h = Math.max(m.total ? 3 : 0, (m.total / topo) * ah), x = cx - bw / 2, yy = pt + ah - h, r = Math.min(6, h / 2, bw / 2); %>
+              <rect class="barra-fundo" x="<%= pl + slot * i %>" y="<%= pt %>" width="<%= slot %>" height="<%= ah %>" tabindex="0"
+                data-dica-valor="<%= u.fmtMoeda(m.total) %>" data-dica-mes="<%= m.rotulo %>" data-dica-qtd="<%= m.qtd %> nota<%= m.qtd === 1 ? '' : 's' %>" data-dica-topo="<%= Math.min(yy, pt + ah - 2) %>"/>
+              <% if (h > 0) { %>
+                <path class="barra <%= m.atual ? 'atual' : '' %>" style="pointer-events:none" d="M<%= x %>,<%= yy + h %> V<%= yy + r %> Q<%= x %>,<%= yy %> <%= x + r %>,<%= yy %> H<%= x + bw - r %> Q<%= x + bw %>,<%= yy %> <%= x + bw %>,<%= yy + r %> V<%= yy + h %> Z"/>
+              <% } %>
+              <text class="eixo-txt eixo-x" x="<%= cx %>" y="<%= H - 8 %>" text-anchor="middle" style="<%= m.atual ? 'font-weight:600;fill:var(--texto)' : '' %>"><%= m.rotulo %></text>
+            <% }) %>
+          </svg>
+          <div class="grafico-dica"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-cab">
+        <div><h2>Últimas notas</h2><p>As 8 mais recentes de todas as empresas</p></div>
+        <a class="btn btn-sm" href="/notas">Ver todas <%- ic('direita', 14) %></a>
+      </div>
+      <% if (!ultimas.length) { %>
+        <%- include('partials/vazio', { icone: 'nota', tituloVazio: 'Nenhuma nota emitida ainda', texto: 'Quando você emitir a primeira nota, ela aparece aqui.', acaoHref: '/notas/nova', acaoTxt: 'Emitir primeira nota' }) %>
+      <% } else { %>
+      <div class="tabela-wrap"><table class="tabela-cards">
+        <thead><tr><th>Nota</th><th>Prestador</th><th>Tomador</th><th class="num">Valor</th><th>Status</th></tr></thead>
+        <tbody>
+        <% ultimas.forEach(n => { %>
+          <tr class="clicavel" data-href="/notas/<%= n.id %>" data-nota-id="<%= n.id %>" data-nota-status="<%= n.status %>">
+            <td class="td-titulo"><a href="/notas/<%= n.id %>" class="pri"><%= n.numero_nfse ? 'Nº ' + n.numero_nfse : 'DPS ' + n.numero_dps %></a><span class="sec"><%= u.fmtCompetencia(n.competencia) %></span></td>
+            <td data-rot="Prestador"><%= n.razao_social %></td>
+            <td data-rot="Tomador"><%= n.tomador_nome || '—' %></td>
+            <td class="num" data-rot="Valor"><%= u.fmtMoeda(n.valor) %></td>
+            <td data-rot="Status"><%- include('partials/status', { status: n.status }) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-cab"><div><h2>Por empresa</h2><p>Faturamento em <%= mesTxt %></p></div></div>
+      <% if (!porEmpresa.length) { %>
+        <%- include('partials/vazio', { compacto: true, icone: 'empresa', tituloVazio: 'Sem empresas', texto: 'Cadastre empresas para ver o ranking.' }) %>
+      <% } else { const maxE = Math.max(...porEmpresa.map(e => e.total)) || 1; %>
+        <ul class="lista-itens">
+          <% porEmpresa.forEach(e => { %>
+            <li>
+              <div class="li-txt">
+                <div class="flex-entre"><a href="/empresas/<%= e.id %>"><%= e.razao_social %></a><span class="li-val"><%= u.fmtMoeda(e.total) %></span></div>
+                <div class="barra-prog"><div style="width:<%= Math.round(e.total / maxE * 100) %>%"></div></div>
+                <small><%= e.qtd %> nota<%= e.qtd === 1 ? '' : 's' %></small>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <div class="card-cab"><div><h2>Recorrentes do mês</h2><p>Ainda não geradas</p></div><a class="btn btn-sm btn-fantasma" href="/recorrencias">Ver</a></div>
+      <% if (!proximasRec.length) { %>
+        <%- include('partials/vazio', { compacto: true, icone: 'ok', tituloVazio: 'Tudo em dia!', texto: 'Nenhuma recorrência pendente este mês.' }) %>
+      <% } else { %>
+        <ul class="lista-itens">
+          <% proximasRec.forEach(r => { %>
+            <li>
+              <div class="dia"><small>dia</small><strong><%= r.dia_mes %></strong></div>
+              <div class="li-txt"><strong><%= r.tomador_nome %></strong><small><%= r.razao_social %></small></div>
+              <span class="li-val"><%= u.fmtMoeda(r.valor) %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/portal/nova">Emitir nota</a> <%- ic('direita', 12) %> <span>Novo cliente</span></div>
+    <h1>Novo cliente</h1>
+    <p class="subtitulo">Quem recebe a nota. Com CNPJ, a busca preenche quase tudo.</p>
+  </div>
+</div>
+<form method="post" action="/portal/tomadores" data-validar style="max-width:920px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <%- include('../partials/form-tomador', { tom }) %>
+  <div class="acoes">
+    <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar cliente</button>
+    <a class="btn btn-fantasma" href="/portal/nova">Cancelar</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

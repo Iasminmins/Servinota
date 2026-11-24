@@ -1,0 +1,54 @@
+<%- include('../partials/header') %>
+<% const AMB = { simulacao: ['Simulação', 'laranja'], homologacao: ['Homologação', 'azul'], producao: ['Produção', 'verde'] }; %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Empresas</h1>
+    <p class="subtitulo">Os clientes do escritório que emitem NFS-e pelo sistema.</p>
+  </div>
+  <div class="acoes"><a class="btn btn-pri" href="/empresas/nova"><%- ic('plus') %> Nova empresa</a></div>
+</div>
+
+<div class="card">
+  <form class="filtros" method="get" role="search">
+    <label class="input-ic"><span class="sr">Buscar</span><%- ic('busca') %>
+      <input type="search" name="busca" value="<%= busca %>" placeholder="Buscar por razão social, fantasia ou CNPJ"></label>
+    <label class="check" style="padding:0 6px"><input type="checkbox" name="inativas" value="1" <%= query.inativas ? 'checked' : '' %> onchange="this.form.submit()"> Mostrar inativas</label>
+    <button class="btn" data-livre><%- ic('filtro', 14) %> Filtrar</button>
+    <% if (busca || query.inativas) { %><a class="btn btn-fantasma" href="/empresas"><%- ic('x', 14) %> Limpar</a><% } %>
+  </form>
+</div>
+
+<div class="card">
+  <% if (!empresas.length) { %>
+    <% if (busca) { %>
+      <%- include('../partials/vazio', { icone: 'busca', tituloVazio: 'Nenhuma empresa encontrada', texto: 'Confira o nome ou CNPJ digitado.' }) %>
+    <% } else { %>
+      <%- include('../partials/vazio', { icone: 'empresa', tituloVazio: 'Nenhuma empresa cadastrada', texto: 'Cadastre a primeira empresa cliente. A busca por CNPJ preenche quase tudo sozinha.', acaoHref: '/empresas/nova', acaoTxt: 'Cadastrar empresa' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Empresa</th><th>CNPJ</th><th>Município</th><th>Ambiente</th><th>Certificado</th><th class="num">Notas</th></tr></thead>
+    <tbody>
+    <% empresas.forEach(e => { const amb = AMB[e.ambiente]; %>
+      <tr class="clicavel <%= e.ativo ? '' : 'inativo' %>" data-href="/empresas/<%= e.id %>">
+        <td class="td-titulo">
+          <a href="/empresas/<%= e.id %>" class="pri"><%= e.razao_social %></a>
+          <% if (!e.ativo) { %> <span class="badge cinza sem-ponto">inativa</span><% } %>
+          <% if (e.nome_fantasia) { %><span class="sec"><%= e.nome_fantasia %></span><% } %>
+        </td>
+        <td class="num" style="text-align:left" data-rot="CNPJ"><%= u.fmtDoc(e.cnpj) %></td>
+        <td data-rot="Município"><%= e.municipio || '—' %><%= e.uf ? '/' + e.uf : '' %></td>
+        <td data-rot="Ambiente"><span class="badge <%= amb[1] %>"><%= amb[0] %></span></td>
+        <td data-rot="Certificado">
+          <% if (!e.cert_validade) { %><span class="muted">Não enviado</span>
+          <% } else if (e.cert_validade < u.hojeISO()) { %><span class="badge vermelho">Vencido</span>
+          <% } else { %><span class="flex" style="gap:6px"><%- ic('escudo', 14) %> até <%= u.fmtData(e.cert_validade) %></span><% } %>
+        </td>
+        <td class="num" data-rot="Notas"><%= e.qtd_notas %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

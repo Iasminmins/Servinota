@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/empresas">Empresas</a> <%- ic('direita', 12) %> <a href="/empresas/<%= emp.id %>?aba=servicos"><%= emp.razao_social %></a> <%- ic('direita', 12) %> <span><%= serv.id ? 'Editar serviço' : 'Novo serviço' %></span></div>
+    <h1><%= titulo %></h1>
+    <p class="subtitulo">Modelo reaproveitável na hora de emitir.</p>
+  </div>
+</div>
+<form method="post" action="/empresas/<%= emp.id %>/servicos<%= serv.id ? '/' + serv.id : '' %>" data-validar style="max-width:760px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="card">
+    <div class="card-corpo">
+      <div class="campo"><label class="rotulo">Descrição (discriminação na nota) <span class="obrig">*</span></label>
+        <textarea name="descricao" rows="4" required data-msg="Descreva o serviço."><%= serv.descricao || '' %></textarea></div>
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">Cód. tributação nacional <span class="obrig">*</span>
+          <span class="dica" tabindex="0" data-dica="Código de 6 dígitos da lista nacional de serviços." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+          <input type="text" name="cod_trib_nac" value="<%= serv.cod_trib_nac || '' %>" maxlength="6" inputmode="numeric" required data-regra="cod6"></div>
+        <div class="campo"><label class="rotulo">Código NBS</label><input type="text" name="cod_nbs" value="<%= serv.cod_nbs || '' %>" maxlength="9" placeholder="Opcional"></div>
+      </div>
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">Valor padrão</label><div class="prefixo"><span>R$</span><input type="text" name="valor" value="<%= serv.valor ? String(serv.valor).replace('.', ',') : '' %>" inputmode="decimal" placeholder="0,00"></div></div>
+        <div class="campo"><label class="rotulo">Alíquota ISS (%)</label><input type="text" name="aliquota" value="<%= serv.aliquota != null ? String(serv.aliquota).replace('.', ',') : '' %>" inputmode="decimal"></div>
+      </div>
+      <label class="check"><input type="checkbox" name="iss_retido" value="1" <%= serv.iss_retido == 1 ? 'checked' : '' %>><span>ISS retido pelo tomador</span></label>
+    </div>
+    <div class="card-rodape acoes">
+      <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar serviço</button>
+      <a class="btn btn-fantasma" href="/empresas/<%= emp.id %>?aba=servicos">Cancelar</a>
+    </div>
+  </div>
+</form>
+<%- include('../partials/footer') %>

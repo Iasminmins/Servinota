@@ -1,0 +1,221 @@
+<%- include('../partials/header') %>
+<% const AMB = { simulacao: ['Simulação', 'laranja'], homologacao: ['Homologação', 'azul'], producao: ['Produção', 'verde'] }; const amb = AMB[emp.ambiente]; %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/empresas">Empresas</a> <%- ic('direita', 12) %> <span><%= emp.razao_social %></span></div>
+    <h1 class="flex" style="gap:10px;flex-wrap:wrap"><%= emp.razao_social %> <span class="badge <%= amb[1] %>" style="font-size:12px"><%= amb[0] %></span><% if (!emp.ativo) { %><span class="badge cinza sem-ponto">Inativa</span><% } %></h1>
+    <p class="subtitulo"><%= u.fmtDoc(emp.cnpj) %> · <%= emp.municipio %>/<%= emp.uf %><%= emp.nome_fantasia ? ' · ' + emp.nome_fantasia : '' %></p>
+  </div>
+  <div class="acoes">
+    <a class="btn" href="/empresas/<%= emp.id %>/editar"><%- ic('editar') %> Editar</a>
+    <a class="btn" href="/recorrencias/nova?empresa=<%= emp.id %>"><%- ic('recorrente') %> Recorrência</a>
+    <a class="btn btn-pri" href="/notas/nova?empresa=<%= emp.id %>"><%- ic('emitir') %> Emitir nota</a>
+  </div>
+</div>
+
+<% if (emp.ambiente !== 'simulacao' && !emp.cert_pfx) { %>
+  <div class="alerta erro"><%- ic('escudo', 18) %><div class="alerta-corpo">Empresa em <%= amb[0].toLowerCase() %> sem certificado digital. As notas vão falhar. <a href="?aba=certificado">Enviar certificado</a></div></div>
+<% } else if (!emp.cert_pfx) { %>
+  <div class="alerta info"><%- ic('info', 18) %><div class="alerta-corpo">Empresa em <strong>simulação</strong>: dá para testar todo o fluxo sem valor fiscal. Para emitir de verdade, <a href="?aba=certificado">envie o certificado A1</a> e troque o ambiente.</div></div>
+<% } %>
+
+<nav class="abas" aria-label="Seções da empresa">
+  <% [['tomadores', 'Tomadores', tomadores.length, 'usuarios'], ['servicos', 'Serviços', servicos.length, 'lista'], ['notas', 'Notas', null, 'nota'], ['dados', 'Dados', null, 'info'], ['certificado', 'Certificado', null, 'escudo'], ['portal', 'Portal do cliente', usuarios.length, 'globo']].forEach(([k, t, n, i]) => { %>
+    <a href="?aba=<%= k %>" class="<%= aba === k ? 'ativo' : '' %>"><%- ic(i, 15) %> <%= t %><% if (n !== null) { %> <span class="cont"><%= n %></span><% } %></a>
+  <% }) %>
+</nav>
+
+<% if (aba === 'tomadores') { %>
+  <div class="card">
+    <div class="card-cab"><div><h2>Tomadores de serviço</h2><p>Clientes para quem esta empresa emite notas</p></div>
+      <a class="btn btn-sm" href="/empresas/<%= emp.id %>/tomadores/novo"><%- ic('plus', 14) %> Novo tomador</a></div>
+    <% if (!tomadores.length) { %>
+      <%- include('../partials/vazio', { icone: 'usuarios', tituloVazio: 'Nenhum tomador ainda', texto: 'Cadastre aqui ou importe uma planilha: os tomadores novos são criados automaticamente.', acaoHref: '/empresas/' + emp.id + '/tomadores/novo', acaoTxt: 'Novo tomador' }) %>
+    <% } else { %>
+    <div class="tabela-wrap"><table class="tabela-cards">
+      <thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>E-mail</th><th>Município</th><th><span class="sr">Ações</span></th></tr></thead>
+      <tbody>
+      <% tomadores.forEach(t => { %>
+        <tr>
+          <td class="td-titulo"><span class="pri"><%= t.nome %></span></td>
+          <td class="num" style="text-align:left" data-rot="Documento"><%= u.fmtDoc(t.documento) %></td>
+          <td data-rot="E-mail"><%= t.email || '—' %></td>
+          <td data-rot="Município"><%= t.municipio ? t.municipio + '/' + t.uf : '—' %></td>
+          <td class="acoes-linha">
+            <a class="btn btn-sm esconder-mob" href="/notas/nova?empresa=<%= emp.id %>&tomador=<%= t.id %>"><%- ic('emitir', 14) %> Emitir</a>
+            <details class="menu-acoes">
+              <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Mais ações"><%- ic('mais') %></summary>
+              <div class="menu-pop">
+                <a href="/notas/nova?empresa=<%= emp.id %>&tomador=<%= t.id %>"><%- ic('emitir') %> Emitir nota</a>
+                <a href="/empresas/<%= emp.id %>/tomadores/<%= t.id %>/editar"><%- ic('editar') %> Editar</a>
+                <hr>
+                <form method="post" action="/empresas/<%= emp.id %>/tomadores/<%= t.id %>/excluir" data-confirma="Excluir este tomador?">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="perigo" data-livre><%- ic('lixo') %> Excluir</button>
+                </form>
+              </div>
+            </details>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (aba === 'servicos') { %>
+  <div class="card">
+    <div class="card-cab"><div><h2>Serviços frequentes</h2><p>Modelos prontos para agilizar a emissão</p></div>
+      <a class="btn btn-sm" href="/empresas/<%= emp.id %>/servicos/novo"><%- ic('plus', 14) %> Novo serviço</a></div>
+    <% if (!servicos.length) { %>
+      <%- include('../partials/vazio', { icone: 'lista', tituloVazio: 'Nenhum serviço cadastrado', texto: 'Cadastre os serviços que a empresa mais presta e escolha-os com um clique ao emitir.', acaoHref: '/empresas/' + emp.id + '/servicos/novo', acaoTxt: 'Novo serviço' }) %>
+    <% } else { %>
+    <div class="tabela-wrap"><table class="tabela-cards">
+      <thead><tr><th>Descrição</th><th>Cód. tributação</th><th class="num">Valor</th><th class="num">Alíquota</th><th>ISS retido</th><th><span class="sr">Ações</span></th></tr></thead>
+      <tbody>
+      <% servicos.forEach(s => { %>
+        <tr>
+          <td class="td-titulo"><span class="pri"><%= s.descricao.length > 80 ? s.descricao.slice(0, 80) + '…' : s.descricao %></span></td>
+          <td data-rot="Cód. tributação" class="num" style="text-align:left"><%= s.cod_trib_nac %></td>
+          <td class="num" data-rot="Valor"><%= s.valor ? u.fmtMoeda(s.valor) : '—' %></td>
+          <td class="num" data-rot="Alíquota"><%= s.aliquota != null ? u.fmtNum(s.aliquota) + '%' : '—' %></td>
+          <td data-rot="ISS retido"><%= s.iss_retido ? 'Sim' : 'Não' %></td>
+          <td class="acoes-linha">
+            <details class="menu-acoes">
+              <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Mais ações"><%- ic('mais') %></summary>
+              <div class="menu-pop">
+                <a href="/empresas/<%= emp.id %>/servicos/<%= s.id %>/editar"><%- ic('editar') %> Editar</a>
+                <hr>
+                <form method="post" action="/empresas/<%= emp.id %>/servicos/<%= s.id %>/excluir" data-confirma="Excluir este serviço?">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="perigo" data-livre><%- ic('lixo') %> Excluir</button>
+                </form>
+              </div>
+            </details>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (aba === 'notas') { %>
+  <div class="card">
+    <div class="card-cab"><div><h2>Últimas notas</h2><p>As 30 mais recentes desta empresa</p></div>
+      <a class="btn btn-sm" href="/notas?empresa=<%= emp.id %>">Ver todas <%- ic('direita', 14) %></a></div>
+    <% if (!notas.length) { %>
+      <%- include('../partials/vazio', { icone: 'nota', tituloVazio: 'Nenhuma nota emitida', texto: 'As notas desta empresa aparecem aqui.', acaoHref: '/notas/nova?empresa=' + emp.id, acaoTxt: 'Emitir nota' }) %>
+    <% } else { %>
+    <div class="tabela-wrap"><table class="tabela-cards">
+      <thead><tr><th>Nota</th><th>Competência</th><th>Tomador</th><th class="num">Valor</th><th>Status</th></tr></thead>
+      <tbody>
+      <% notas.forEach(n => { %>
+        <tr class="clicavel" data-href="/notas/<%= n.id %>" data-nota-id="<%= n.id %>" data-nota-status="<%= n.status %>">
+          <td class="td-titulo"><a href="/notas/<%= n.id %>" class="pri"><%= n.numero_nfse ? 'Nº ' + n.numero_nfse : 'DPS ' + n.numero_dps %></a></td>
+          <td data-rot="Competência"><%= u.fmtCompetencia(n.competencia) %></td>
+          <td data-rot="Tomador"><%= n.tomador_nome || '—' %></td>
+          <td class="num" data-rot="Valor"><%= u.fmtMoeda(n.valor) %></td>
+          <td data-rot="Status"><%- include('../partials/status', { status: n.status }) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (aba === 'dados') { %>
+  <div class="grade g2">
+    <div class="card">
+      <div class="card-cab"><h2>Cadastro</h2><a class="btn btn-sm btn-fantasma" href="/empresas/<%= emp.id %>/editar"><%- ic('editar', 14) %> Editar</a></div>
+      <div class="card-corpo">
+        <dl class="dados">
+          <dt>Razão social</dt><dd><%= emp.razao_social %></dd>
+          <dt>Nome fantasia</dt><dd><%= emp.nome_fantasia || '—' %></dd>
+          <dt>CNPJ</dt><dd class="num"><%= u.fmtDoc(emp.cnpj) %></dd>
+          <dt>Inscrição municipal</dt><dd><%= emp.im || '—' %></dd>
+          <dt>E-mail</dt><dd><%= emp.email || '—' %></dd>
+          <dt>Telefone</dt><dd><%= emp.telefone || '—' %></dd>
+          <dt>Endereço</dt><dd><%= [emp.logradouro, emp.numero, emp.complemento, emp.bairro].filter(Boolean).join(', ') || '—' %><br><span class="muted"><%= emp.municipio %>/<%= emp.uf %> · CEP <%= u.fmtCep(emp.cep) || '—' %></span></dd>
+          <dt>Cód. IBGE</dt><dd class="num"><%= emp.cod_municipio %></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><h2>Fiscal e emissão</h2></div>
+      <div class="card-corpo">
+        <dl class="dados">
+          <dt>Simples Nacional</dt><dd><%= { 1: 'Não optante', 2: 'MEI', 3: 'ME/EPP' }[emp.op_simples] %></dd>
+          <dt>Cód. tributação padrão</dt><dd><%= emp.cod_trib_nac_padrao || '—' %></dd>
+          <dt>Alíquota padrão</dt><dd><%= emp.aliquota_padrao != null ? u.fmtNum(emp.aliquota_padrao) + '%' : '—' %></dd>
+          <dt>Ambiente</dt><dd><span class="badge <%= amb[1] %>"><%= amb[0] %></span></dd>
+          <dt>Série / próximo nº</dt><dd class="num"><%= emp.serie %> / <%= emp.proximo_numero %></dd>
+          <dt>Emissão pelo portal</dt><dd><%= emp.portal_pode_emitir ? 'Liberada' : 'Bloqueada' %></dd>
+        </dl>
+      </div>
+      <% if (user.papel === 'admin') { %>
+      <div class="card-rodape flex-entre">
+        <span class="legenda"><%= emp.ativo ? 'Desativar pausa as recorrências e esconde a empresa.' : 'A empresa está inativa.' %></span>
+        <form class="inline" method="post" action="/empresas/<%= emp.id %>/ativo" data-confirma="<%= emp.ativo ? 'Desativar a empresa? As recorrências serão pausadas.' : 'Reativar a empresa?' %>">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button class="btn btn-sm <%= emp.ativo ? 'btn-perigo' : '' %>"><%= emp.ativo ? 'Desativar empresa' : 'Reativar empresa' %></button>
+        </form>
+      </div>
+      <% } %>
+    </div>
+  </div>
+<% } %>
+
+<% if (aba === 'certificado') { %>
+  <div class="grade g2">
+    <div class="card">
+      <div class="card-cab"><div><h2>Certificado atual</h2><p>Usado para assinar e transmitir as notas</p></div></div>
+      <div class="card-corpo">
+        <% if (!emp.cert_pfx) { %>
+          <%- include('../partials/vazio', { compacto: true, icone: 'escudo', tituloVazio: 'Nenhum certificado', texto: 'Envie o certificado A1 (.pfx) ao lado para emitir em homologação ou produção.' }) %>
+        <% } else { const vencido = emp.cert_validade < u.hojeISO(); %>
+          <div class="flex" style="gap:14px;margin-bottom:16px">
+            <span class="metrica-ic <%= vencido ? 'cor-erro' : 'cor-ok' %>" style="width:44px;height:44px"><%- ic('escudo', 22) %></span>
+            <div><strong style="display:block"><%= vencido ? 'Certificado vencido' : 'Certificado válido' %></strong><span class="muted">até <%= u.fmtData(emp.cert_validade) %></span></div>
+          </div>
+          <dl class="dados"><dt>Titular</dt><dd><%= emp.cert_titular %></dd></dl>
+          <% if (user.papel === 'admin') { %>
+          <form method="post" action="/empresas/<%= emp.id %>/certificado/remover" data-confirma="Remover o certificado? A empresa volta para simulação." style="margin-top:18px">
+            <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-sm btn-perigo"><%- ic('lixo', 14) %> Remover certificado</button>
+          </form>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-cab"><div><h2><%= emp.cert_pfx ? 'Substituir certificado' : 'Enviar certificado A1' %></h2><p>Arquivo .pfx ou .p12 com a senha</p></div></div>
+      <form class="card-corpo" method="post" action="/empresas/<%= emp.id %>/certificado" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo"><label class="rotulo">Arquivo do certificado</label><input type="file" name="arquivo" accept=".pfx,.p12" required></div>
+        <div class="campo"><label class="rotulo">Senha do certificado</label><input type="password" name="senha" autocomplete="new-password"></div>
+        <button class="btn btn-pri"><%- ic('upload') %><%- ic('carregando', 16, 'giro') %> Enviar certificado</button>
+        <p class="ajuda" style="margin-top:12px"><%- ic('chave', 12) %> Arquivo e senha ficam criptografados no servidor (AES-256).</p>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<% if (aba === 'portal') { %>
+  <div class="card">
+    <div class="card-cab"><div><h2>Acesso do cliente</h2><p>Usuários do portal veem só as notas desta empresa<%= emp.portal_pode_emitir ? ' e podem emitir' : '' %>.</p></div>
+      <% if (user.papel === 'admin') { %><a class="btn btn-sm" href="/usuarios/novo?empresa=<%= emp.id %>"><%- ic('plus', 14) %> Criar acesso</a><% } %></div>
+    <% if (!usuarios.length) { %>
+      <%- include('../partials/vazio', { icone: 'globo', tituloVazio: 'Nenhum acesso criado', texto: user.papel === 'admin' ? 'Crie um login para o cliente acompanhar e baixar as notas dele.' : 'Peça ao administrador do escritório para criar o acesso.' }) %>
+    <% } else { %>
+      <div class="tabela-wrap"><table class="tabela-cards">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Último acesso</th><th>Situação</th></tr></thead>
+        <tbody><% usuarios.forEach(x => { %>
+          <tr><td class="td-titulo"><span class="pri"><%= x.nome %></span></td><td data-rot="E-mail"><%= x.email %></td><td data-rot="Último acesso"><%= u.fmtData(x.ultimo_acesso) || 'Nunca' %></td>
+            <td data-rot="Situação"><span class="badge <%= x.ativo ? 'verde' : 'cinza' %>"><%= x.ativo ? 'Ativo' : 'Inativo' %></span></td></tr>
+        <% }) %></tbody>
+      </table></div>
+    <% } %>
+  </div>
+<% } %>
+<%- include('../partials/footer') %>

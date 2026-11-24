@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><%- include('partials/head') %></head>
+<body>
+<div class="tela-auth">
+  <%- include('partials/auth-marca') %>
+  <main class="auth-form">
+    <div class="auth-caixa">
+      <div class="auth-logo-mobile"><%- include('partials/logo', { href: '/login', idLogo: 'mob' }) %></div>
+      <h1>Entrar</h1>
+      <p class="subtitulo">Acesse com seu e-mail e senha.</p>
+      <% (flash || []).forEach(f => { %><div class="alerta <%= f.tipo %>"><%- ic(f.tipo === 'erro' ? 'erro' : 'info', 16) %><div class="alerta-corpo"><%= f.msg %></div></div><% }) %>
+      <form method="post" action="/login" data-validar>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo">
+          <label class="rotulo" for="email">E-mail</label>
+          <input type="email" id="email" name="email" value="<%= email %>" required autofocus autocomplete="username" placeholder="voce@escritorio.com.br">
+        </div>
+        <div class="campo">
+          <label class="rotulo" for="senha">Senha</label>
+          <input type="password" id="senha" name="senha" required autocomplete="current-password">
+        </div>
+        <button class="btn btn-pri btn-lg btn-bloco" style="margin-top:6px"><%- ic('direita') %><%- ic('carregando', 16, 'giro') %> <span>Entrar</span></button>
+      </form>
+      <p class="rodape"><%= temEscritorio ? 'Escritório novo?' : 'Primeiro acesso?' %> <a href="/cadastro">Criar conta</a> · <a href="/produto">Conheça a plataforma</a></p>
+    </div>
+  </main>
+</div>
+<script src="/static/js/app.js?v=2"></script>
+</body>
+</html>

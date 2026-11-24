@@ -1,0 +1,48 @@
+<%- include('../partials/header') %>
+<script>window.STATUS_URL = '/portal/status.json'; document.body.setAttribute('data-recarregar', '1');</script>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/portal">Minhas notas</a> <%- ic('direita', 12) %> <span><%= nota.numero_nfse ? 'Nº ' + nota.numero_nfse : 'DPS ' + nota.numero_dps %></span></div>
+    <h1 class="flex" style="gap:12px;flex-wrap:wrap">NFS-e <%= nota.numero_nfse ? 'nº ' + nota.numero_nfse : '(DPS ' + nota.numero_dps + ')' %>
+      <span data-nota-id="<%= nota.id %>" data-nota-status="<%= nota.status %>" style="font-size:0"><%- include('../partials/status', { status: nota.status }) %></span></h1>
+    <p class="subtitulo"><%= tomador ? tomador.nome : '' %> · <%= u.fmtMoeda(nota.valor) %></p>
+  </div>
+  <div class="acoes">
+    <% if (nota.status === 'emitida' || nota.status === 'cancelada') { %>
+      <a class="btn" href="/portal/notas/<%= nota.id %>/xml"><%- ic('xml') %> XML</a>
+      <a class="btn btn-pri" href="/portal/notas/<%= nota.id %>/pdf" target="_blank"><%- ic('pdf') %> Baixar PDF</a>
+    <% } %>
+  </div>
+</div>
+<% if (nota.status === 'pendente' || nota.status === 'processando') { %>
+  <div class="alerta info"><%- ic('carregando', 18, 'giro-sempre') %><div class="alerta-corpo"><strong>Transmitindo a nota…</strong> Esta página atualiza sozinha.</div></div>
+<% } else if (nota.status === 'erro') { %>
+  <div class="alerta erro"><%- ic('erro', 18) %><div class="alerta-corpo"><strong>A nota não pôde ser emitida.</strong> <%= nota.mensagem %><br>O escritório foi avisado e vai verificar.</div></div>
+<% } else if (nota.status === 'cancelada') { %>
+  <div class="alerta aviso"><%- ic('cancelar', 18) %><div class="alerta-corpo">Nota cancelada em <%= u.fmtData(nota.cancelada_em) %>.</div></div>
+<% } %>
+<div class="grade g-2-1">
+  <div class="card">
+    <div class="card-cab"><h2>Dados da nota</h2></div>
+    <div class="card-corpo">
+      <dl class="dados">
+        <dt>Cliente</dt><dd><%= tomador ? tomador.nome + ' · ' + u.fmtDoc(tomador.documento) : '—' %></dd>
+        <dt>Competência</dt><dd><%= u.fmtData(nota.competencia) %></dd>
+        <dt>Chave de acesso</dt><dd><%- nota.chave_acesso ? '<code>' + nota.chave_acesso + '</code>' : '—' %></dd>
+        <dt>Descrição</dt><dd style="white-space:pre-wrap"><%= nota.descricao %></dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h2>Valores</h2></div>
+    <div class="card-corpo">
+      <div class="resumo-linhas">
+        <div class="l"><span>Valor do serviço</span><span><%= u.fmtMoeda(nota.valor) %></span></div>
+        <div class="l"><span>ISS</span><span><%= nota.valor_iss != null ? u.fmtMoeda(nota.valor_iss) : '—' %></span></div>
+        <div class="l"><span>ISS retido</span><span><%= nota.iss_retido ? 'Sim' : 'Não' %></span></div>
+      </div>
+      <div class="resumo-total" style="margin-bottom:0"><span>Valor líquido</span><strong><%= u.fmtMoeda(nota.iss_retido ? nota.valor - (nota.valor_iss || 0) : nota.valor) %></strong></div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

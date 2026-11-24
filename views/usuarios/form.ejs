@@ -1,0 +1,49 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/usuarios">Usuários</a> <%- ic('direita', 12) %> <span><%= usr.id ? 'Editar' : 'Novo' %></span></div>
+    <h1><%= titulo %></h1>
+    <p class="subtitulo"><%= usr.id ? 'Altere os dados ou redefina a senha.' : 'Crie o acesso e passe o e-mail e a senha para a pessoa.' %></p>
+  </div>
+</div>
+<form method="post" action="/usuarios<%= usr.id ? '/' + usr.id : '' %>" data-validar style="max-width:640px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="card">
+    <div class="card-corpo">
+      <div class="campo"><label class="rotulo">Nome <span class="obrig">*</span></label><input type="text" name="nome" value="<%= usr.nome || '' %>" required data-msg="Informe o nome."></div>
+      <div class="campo"><label class="rotulo">E-mail (login) <span class="obrig">*</span></label><input type="email" name="email" value="<%= usr.email || '' %>" required data-msg="Informe o e-mail."></div>
+      <div class="linha-form c2">
+        <div class="campo">
+          <label class="rotulo">Perfil</label>
+          <select name="papel" id="papel">
+            <% Object.entries(PAPEIS).forEach(([k, t]) => { %><option value="<%= k %>" <%= usr.papel === k ? 'selected' : '' %>><%= t %></option><% }) %>
+          </select>
+        </div>
+        <div class="campo" id="campo-empresa">
+          <label class="rotulo">Empresa do cliente <span class="obrig">*</span></label>
+          <select name="empresa_id" id="empresa_id">
+            <option value="">Selecione…</option>
+            <% empresas.forEach(e => { %><option value="<%= e.id %>" <%= String(usr.empresa_id) === String(e.id) ? 'selected' : '' %>><%= e.razao_social %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label class="rotulo"><%= usr.id ? 'Nova senha' : 'Senha inicial' %> <% if (!usr.id) { %><span class="obrig">*</span><% } %></label>
+        <input type="text" name="senha" value="<%= sugestao || '' %>" autocomplete="new-password" minlength="8" <%= usr.id ? '' : 'required' %> class="mono" style="font-size:14px" placeholder="<%= usr.id ? 'Em branco mantém a atual' : '' %>">
+        <div class="ajuda"><%= usr.id ? 'Mínimo de 8 caracteres.' : 'Sugestão gerada automaticamente. Anote e passe para o usuário.' %></div>
+      </div>
+    </div>
+    <div class="card-rodape acoes">
+      <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar usuário</button>
+      <a class="btn btn-fantasma" href="/usuarios">Cancelar</a>
+    </div>
+  </div>
+</form>
+<script>
+(function () {
+  const p = document.getElementById('papel'), c = document.getElementById('campo-empresa'), e = document.getElementById('empresa_id');
+  const ver = () => { const cli = p.value === 'cliente'; c.style.display = cli ? '' : 'none'; e.required = cli; };
+  p.addEventListener('change', ver); ver();
+})();
+</script>
+<%- include('../partials/footer') %>

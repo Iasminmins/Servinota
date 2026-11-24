@@ -1,0 +1,63 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Importar planilha</h1>
+    <p class="subtitulo">Emita dezenas de notas de uma vez a partir de um Excel ou CSV.</p>
+  </div>
+  <div class="acoes"><a class="btn" href="/importacao/modelo.xlsx"><%- ic('download') %> Baixar modelo .xlsx</a></div>
+</div>
+
+<div class="grade g-2-1">
+  <div class="card">
+    <div class="secao-cab"><span class="secao-num"><%- ic('upload', 14) %></span><div><h2>Enviar planilha</h2><p>Nada é emitido agora: você confere as linhas antes</p></div></div>
+    <form class="card-corpo" method="post" action="/importacao" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="campo">
+        <label class="rotulo">Empresa prestadora <span class="obrig">*</span></label>
+        <select name="empresa_id" required>
+          <option value="">Selecione…</option>
+          <% empresas.forEach(e => { %><option value="<%= e.id %>" <%= query.empresa == e.id ? 'selected' : '' %>><%= e.razao_social %> · <%= u.fmtDoc(e.cnpj) %></option><% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label class="rotulo">Arquivo <span class="obrig">*</span></label>
+        <input type="file" name="arquivo" accept=".xlsx,.csv" required>
+        <div class="ajuda">.xlsx ou .csv · até 1.000 linhas · 5 MB</div>
+      </div>
+      <label class="check" style="margin-bottom:16px"><input type="checkbox" name="enviar_email" value="1" checked><span>Enviar cada nota por e-mail ao tomador</span></label>
+      <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Validar planilha</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-cab"><h2>Como funciona</h2></div>
+    <ul class="lista-itens">
+      <% [['download', 'Baixe o modelo', 'Uma linha por nota, com cabeçalho na primeira linha.'], ['planilha', 'Preencha o obrigatório', 'CPF/CNPJ e nome do tomador, descrição e valor.'], ['usuarios', 'Tomadores automáticos', 'Quem ainda não existe é cadastrado na hora.'], ['check', 'Confira e confirme', 'As notas entram na fila e saem uma a uma.']].forEach(([i, t, d]) => { %>
+        <li><span class="metrica-ic cor-pri" style="width:32px;height:32px"><%- ic(i, 16) %></span><div class="li-txt"><strong><%= t %></strong><small style="white-space:normal"><%= d %></small></div></li>
+      <% }) %>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-cab"><div><h2>Importações recentes</h2><p>As últimas 20</p></div></div>
+  <% if (!lotes.length) { %>
+    <%- include('../partials/vazio', { compacto: true, icone: 'planilha', tituloVazio: 'Nenhuma importação ainda', texto: 'As planilhas enviadas aparecem aqui com o resultado.' }) %>
+  <% } else { %>
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Arquivo</th><th>Empresa</th><th>Data</th><th class="num">Notas</th><th class="num">Emitidas</th><th class="num">Com erro</th></tr></thead>
+    <tbody>
+    <% lotes.forEach(l => { %>
+      <tr>
+        <td class="td-titulo"><span class="pri flex" style="gap:6px"><%- ic('planilha', 14) %> <%= l.arquivo %></span></td>
+        <td data-rot="Empresa"><%= l.razao_social %></td>
+        <td data-rot="Data"><%= u.fmtData(l.criado_em) %></td>
+        <td class="num" data-rot="Notas"><%= l.total %></td>
+        <td class="num" data-rot="Emitidas"><%= l.emitidas %></td>
+        <td class="num" data-rot="Com erro"><% if (l.erros) { %><a class="badge vermelho" href="/notas?empresa=<%= l.empresa_id %>&status=erro"><%= l.erros %></a><% } else { %>0<% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

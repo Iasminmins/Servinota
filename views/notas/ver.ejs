@@ -1,0 +1,160 @@
+<%- include('../partials/header') %>
+<% const temArq = nota.status === 'emitida' || nota.status === 'cancelada'; %>
+<script>document.body.setAttribute('data-recarregar', '1');</script>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/notas">Notas fiscais</a> <%- ic('direita', 12) %> <span><%= nota.numero_nfse ? 'Nº ' + nota.numero_nfse : 'DPS ' + nota.numero_dps %></span></div>
+    <h1 class="flex" style="gap:12px;flex-wrap:wrap">
+      NFS-e <%= nota.numero_nfse ? 'nº ' + nota.numero_nfse : '(DPS ' + nota.serie + '/' + nota.numero_dps + ')' %>
+      <span data-nota-id="<%= nota.id %>" data-nota-status="<%= nota.status %>" style="font-size:0"><%- include('../partials/status', { status: nota.status }) %></span>
+    </h1>
+    <p class="subtitulo"><%= empresa.razao_social %> → <%= tomador ? tomador.nome : 'tomador não identificado' %> · <%= u.fmtMoeda(nota.valor) %></p>
+  </div>
+  <div class="acoes">
+    <% if (temArq) { %>
+      <a class="btn" href="/notas/<%= nota.id %>/xml"><%- ic('xml') %> XML</a>
+      <a class="btn btn-pri" href="/notas/<%= nota.id %>/pdf" target="_blank"><%- ic('pdf') %> Baixar PDF</a>
+    <% } %>
+    <details class="menu-acoes">
+      <summary class="btn btn-ic" aria-label="Mais ações"><%- ic('mais') %></summary>
+      <div class="menu-pop">
+        <a href="/notas/nova?copiar=<%= nota.id %>&empresa=<%= nota.empresa_id %>&tomador=<%= nota.tomador_id || '' %>"><%- ic('copiar') %> Duplicar nota</a>
+        <% if (nota.xml_dps) { %><a href="/notas/<%= nota.id %>/xml?tipo=dps"><%- ic('xml') %> XML da DPS enviada</a><% } %>
+        <a href="/empresas/<%= nota.empresa_id %>"><%- ic('empresa') %> Ver empresa</a>
+      </div>
+    </details>
+  </div>
+</div>
+
+<% if (nota.status === 'pendente' || nota.status === 'processando') { %>
+  <div class="alerta info"><%- ic('carregando', 18, 'giro-sempre') %><div class="alerta-corpo"><strong>Transmitindo para a Sefin Nacional…</strong> Esta página atualiza sozinha quando terminar.</div></div>
+<% } %>
+<% if (nota.status === 'erro') { %>
+  <div class="alerta erro">
+    <%- ic('erro', 18) %>
+    <div class="alerta-corpo">
+      <strong>Não foi possível emitir.</strong> <%= nota.mensagem %>
+      <div class="acoes">
+        <form class="inline" method="post" action="/notas/<%= nota.id %>/reenviar">
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-sm"><%- ic('reenviar', 14) %><%- ic('carregando', 14, 'giro') %> Tentar novamente</button>
+        </form>
+        <a class="btn btn-sm" href="/empresas/<%= nota.empresa_id %>/editar"><%- ic('editar', 14) %> Revisar empresa</a>
+        <form class="inline" method="post" action="/notas/<%= nota.id %>/excluir" data-confirma="Excluir esta nota que não foi emitida?">
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-sm btn-perigo"><%- ic('lixo', 14) %> Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } else if (nota.mensagem) { %>
+  <div class="alerta aviso"><%- ic('alerta', 18) %><div class="alerta-corpo"><%= nota.mensagem %></div></div>
+<% } %>
+<% if (nota.status === 'cancelada') { %>
+  <div class="alerta aviso"><%- ic('cancelar', 18) %><div class="alerta-corpo"><strong>Nota cancelada</strong> em <%= u.fmtData(nota.cancelada_em) %>. Motivo: <%= nota.motivo_cancelamento %></div></div>
+<% } %>
+
+<div class="grade g-2-1">
+  <div>
+    <div class="card">
+      <div class="card-cab"><h2>Dados da nota</h2>
+        <% if (nota.ambiente !== 'producao') { %><span class="badge laranja sem-ponto"><%= nota.ambiente === 'simulacao' ? 'Simulação' : 'Homologação' %></span><% } %></div>
+      <div class="card-corpo">
+        <dl class="dados">
+          <dt>Número NFS-e</dt><dd><%= nota.numero_nfse || '—' %></dd>
+          <dt>DPS (série / nº)</dt><dd class="num"><%= nota.serie %> / <%= nota.numero_dps %></dd>
+          <dt>Chave de acesso</dt><dd><% if (nota.chave_acesso) { %><code><%= nota.chave_acesso %></code><% } else { %>—<% } %></dd>
+          <dt>Competência</dt><dd><%= u.fmtData(nota.competencia) %></dd>
+          <dt>Emitida em</dt><dd><%= u.fmtData(nota.emitida_em) || '—' %></dd>
+          <dt>Origem</dt><dd><%= { manual: 'Emissão manual', recorrencia: 'Recorrência automática', planilha: 'Importação de planilha', portal: 'Portal do cliente' }[nota.origem] || nota.origem %><%= criador ? ' · ' + criador.nome : '' %></dd>
+          <dt>Código de tributação</dt><dd><%= nota.cod_trib_nac %><%= nota.cod_nbs ? ' · NBS ' + nota.cod_nbs : '' %></dd>
+          <dt>Local da prestação</dt><dd><%= nota.cod_mun_prestacao %></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-cab"><h2>Descrição do serviço</h2></div>
+      <div class="card-corpo" style="white-space:pre-wrap"><%= nota.descricao %></div>
+    </div>
+
+    <div class="grade g2">
+      <div class="card">
+        <div class="card-cab"><h2 class="flex"><%- ic('empresa') %> Prestador</h2></div>
+        <div class="card-corpo">
+          <p class="mb-0"><a href="/empresas/<%= empresa.id %>" style="font-weight:600"><%= empresa.razao_social %></a></p>
+          <p class="muted mb-0"><%= u.fmtDoc(empresa.cnpj) %><br><%= empresa.municipio %>/<%= empresa.uf %></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-cab"><h2 class="flex"><%- ic('usuario') %> Tomador</h2></div>
+        <div class="card-corpo">
+          <% if (tomador) { %>
+            <p class="mb-0" style="font-weight:600"><%= tomador.nome %></p>
+            <p class="muted mb-0"><%= u.fmtDoc(tomador.documento) %><br><%= tomador.email || 'sem e-mail' %></p>
+          <% } else { %><p class="muted mb-0">Não identificado.</p><% } %>
+        </div>
+      </div>
+    </div>
+
+    <% if (nota.xml_nfse || nota.xml_dps) { %>
+    <details class="card">
+      <summary class="card-cab" style="cursor:pointer;list-style:none;border-bottom:0"><h2 class="flex"><%- ic('xml') %> XML <%= nota.xml_nfse ? 'da NFS-e' : 'da DPS' %></h2><%- ic('baixo') %></summary>
+      <div class="card-corpo" style="border-top:1px solid var(--borda)"><div class="xml"><%= (nota.xml_nfse || nota.xml_dps).replace(/></g, '>\n<') %></div></div>
+    </details>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-cab"><h2>Valores</h2></div>
+      <div class="card-corpo">
+        <div class="resumo-linhas">
+          <div class="l"><span>Valor do serviço</span><span><%= u.fmtMoeda(nota.valor) %></span></div>
+          <div class="l"><span>ISS (<%= nota.aliquota != null ? u.fmtNum(nota.aliquota) : '—' %>%)</span><span><%= nota.valor_iss != null ? u.fmtMoeda(nota.valor_iss) : '—' %></span></div>
+          <div class="l"><span>Retenção de ISS</span><span><%= nota.iss_retido ? '− ' + u.fmtMoeda(nota.valor_iss || 0) : 'Não' %></span></div>
+        </div>
+        <div class="resumo-total" style="margin-bottom:0">
+          <span>Valor líquido</span>
+          <strong><%= u.fmtMoeda(nota.iss_retido ? nota.valor - (nota.valor_iss || 0) : nota.valor) %></strong>
+        </div>
+      </div>
+    </div>
+
+    <% if (temArq) { %>
+    <div class="card">
+      <div class="card-cab"><div><h2>Enviar por e-mail</h2><p><%= nota.email_enviado_em ? 'Último envio em ' + u.fmtData(nota.email_enviado_em) : 'Ainda não enviada' %></p></div></div>
+      <form class="card-corpo" method="post" action="/notas/<%= nota.id %>/email">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo">
+          <label class="rotulo" for="para">Destinatário</label>
+          <input type="text" id="para" name="para" placeholder="<%= tomador && tomador.email ? tomador.email : 'email@cliente.com.br' %>">
+          <div class="ajuda">Em branco usa o e-mail do tomador.</div>
+        </div>
+        <button class="btn btn-bloco"><%- ic('email') %><%- ic('carregando', 16, 'giro') %> Enviar PDF + XML</button>
+      </form>
+    </div>
+    <% } %>
+
+    <% if (nota.status === 'emitida') { %>
+    <div class="card">
+      <div class="card-cab"><div><h2>Cancelar nota</h2><p>Gera o evento de cancelamento na Sefin</p></div></div>
+      <form class="card-corpo" method="post" action="/notas/<%= nota.id %>/cancelar" data-confirma="Confirma o cancelamento desta NFS-e? Essa ação não pode ser desfeita.">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo">
+          <label class="rotulo" for="codigo">Motivo</label>
+          <select name="codigo" id="codigo">
+            <option value="1">Erro na emissão</option>
+            <option value="2">Serviço não prestado</option>
+            <option value="9">Outros</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="rotulo" for="motivo">Justificativa <span class="obrig">*</span></label>
+          <textarea name="motivo" id="motivo" rows="2" minlength="15" required placeholder="Mínimo de 15 caracteres" style="min-height:72px"></textarea>
+        </div>
+        <button class="btn btn-perigo btn-bloco"><%- ic('cancelar') %><%- ic('carregando', 16, 'giro') %> Cancelar NFS-e</button>
+      </form>
+    </div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

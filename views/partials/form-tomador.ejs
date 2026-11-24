@@ -1,0 +1,22 @@
+<section class="card">
+  <div class="secao-cab"><span class="secao-num">1</span><div><h2>Identificação</h2><p>Para CNPJ, a busca preenche nome e endereço</p></div></div>
+  <div class="card-corpo">
+    <div class="campo" style="max-width:420px">
+      <label class="rotulo" for="doc">CPF ou CNPJ <span class="obrig">*</span></label>
+      <div class="input-grupo">
+        <input type="text" name="documento" id="doc" value="<%= u.fmtDoc(tom.documento) %>" data-doc data-regra="doc" required data-msg="Informe o CPF ou CNPJ." inputmode="numeric">
+        <button type="button" class="btn" style="height:40px" data-busca-cnpj="#doc"><%- ic('busca') %><%- ic('carregando', 16, 'giro') %> Buscar CNPJ</button>
+      </div>
+    </div>
+    <div class="campo"><label class="rotulo">Nome ou razão social <span class="obrig">*</span></label><input type="text" name="nome" value="<%= tom.nome || '' %>" required data-msg="Informe o nome do tomador."></div>
+    <div class="linha-form" style="grid-template-columns: minmax(0, 2fr) minmax(0, 1fr)">
+      <div class="campo"><label class="rotulo">E-mail para envio da nota</label><input type="text" name="email" value="<%= tom.email || '' %>" placeholder="financeiro@cliente.com.br">
+        <div class="ajuda">Pode colocar mais de um, separados por vírgula.</div></div>
+      <div class="campo"><label class="rotulo">Telefone</label><input type="text" name="telefone" value="<%= tom.telefone || '' %>"></div>
+    </div>
+  </div>
+</section>
+<section class="card">
+  <div class="secao-cab"><span class="secao-num">2</span><div><h2>Endereço</h2><p>Opcional, mas recomendado</p></div></div>
+  <div class="card-corpo"><%- include('endereco', { obj: tom }) %></div>
+</section>

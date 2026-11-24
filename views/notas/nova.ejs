@@ -1,0 +1,214 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/notas">Notas fiscais</a> <%- ic('direita', 12) %> <span>Emitir nota</span></div>
+    <h1>Emitir NFS-e</h1>
+    <p class="subtitulo">Preencha os dados e a nota é transmitida para a NFS-e Nacional em poucos segundos.</p>
+  </div>
+</div>
+
+<% if (!empresas.length) { %>
+  <div class="card"><%- include('../partials/vazio', { icone: 'empresa', tituloVazio: 'Cadastre uma empresa primeiro', texto: 'Para emitir é preciso ter pelo menos uma empresa prestadora cadastrada.', acaoHref: '/empresas/nova', acaoTxt: 'Cadastrar empresa' }) %></div>
+<% } else { %>
+<form method="post" action="/notas" id="form-nota" data-validar>
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="grade g-form">
+    <div>
+      <section class="card">
+        <div class="secao-cab">
+          <span class="secao-num">1</span>
+          <div><h2>Prestador e tomador</h2><p>Quem presta e quem contrata o serviço</p></div>
+        </div>
+        <div class="card-corpo">
+          <div class="campo">
+            <label class="rotulo" for="empresa">Empresa prestadora <span class="obrig">*</span></label>
+            <select name="empresa_id" id="empresa" required data-msg="Selecione a empresa que prestou o serviço.">
+              <option value="">Selecione a empresa…</option>
+              <% empresas.forEach(e => { %>
+                <option value="<%= e.id %>" <%= String(nota.empresa_id) === String(e.id) ? 'selected' : '' %>><%= e.razao_social %> · <%= u.fmtDoc(e.cnpj) %></option>
+              <% }) %>
+            </select>
+            <div class="ajuda" id="aviso-ambiente"></div>
+          </div>
+          <div class="campo">
+            <label class="rotulo" for="tomador">Tomador do serviço <span class="obrig">*</span></label>
+            <div class="input-grupo">
+              <div style="position:relative">
+                <select name="tomador_id" id="tomador" required data-msg="Selecione o tomador." data-valor="<%= nota.tomador_id || '' %>"><option value="">Selecione a empresa primeiro</option></select>
+                <span class="sk" id="sk-tomador" style="display:none;position:absolute;inset:0;border-radius:8px"></span>
+              </div>
+              <a class="btn" id="novo-tomador" href="#" style="height:40px"><%- ic('plus') %> Novo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="secao-cab">
+          <span class="secao-num">2</span>
+          <div><h2>Serviço</h2><p>O que foi prestado e quando</p></div>
+        </div>
+        <div class="card-corpo">
+          <div class="campo">
+            <label class="rotulo" for="servico">Usar um serviço cadastrado</label>
+            <div style="position:relative">
+              <select id="servico"><option value="">Nenhum (preencher manualmente)</option></select>
+              <span class="sk" id="sk-servico" style="display:none;position:absolute;inset:0;border-radius:8px"></span>
+            </div>
+          </div>
+          <div class="campo">
+            <label class="rotulo" for="descricao">Descrição do serviço <span class="obrig">*</span></label>
+            <textarea name="descricao" id="descricao" rows="4" required data-msg="Descreva o serviço prestado." placeholder="Ex.: Desenvolvimento de sistema web conforme contrato nº 12/2026"><%= nota.descricao || '' %></textarea>
+            <div class="ajuda">Aparece na nota exatamente como escrito.</div>
+          </div>
+          <div class="linha-form c3">
+            <div class="campo">
+              <label class="rotulo" for="cod_trib_nac">Cód. tributação nacional <span class="obrig">*</span>
+                <span class="dica" tabindex="0" data-dica="Código de 6 dígitos da lista nacional de serviços (item + subitem + desdobro da LC 116). Ex.: 010101 = análise e desenvolvimento de sistemas." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <input type="text" name="cod_trib_nac" id="cod_trib_nac" value="<%= nota.cod_trib_nac || '' %>" maxlength="6" inputmode="numeric" required data-regra="cod6" placeholder="000000">
+            </div>
+            <div class="campo">
+              <label class="rotulo" for="cod_nbs">Código NBS
+                <span class="dica" tabindex="0" data-dica="Nomenclatura Brasileira de Serviços. Na maioria dos municípios é opcional; deixe em branco se não souber." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <input type="text" name="cod_nbs" id="cod_nbs" value="<%= nota.cod_nbs || '' %>" maxlength="9" inputmode="numeric" placeholder="Opcional">
+            </div>
+            <div class="campo">
+              <label class="rotulo" for="competencia">Competência <span class="obrig">*</span>
+                <span class="dica dica-esq" tabindex="0" data-dica="Data em que o serviço foi prestado. Define o mês de apuração do ISS. Não pode ser futura." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <input type="date" name="competencia" id="competencia" value="<%= nota.competencia || u.hojeISO() %>" max="<%= u.hojeISO() %>" required>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="secao-cab">
+          <span class="secao-num">3</span>
+          <div><h2>Valores e tributação</h2><p>Valor do serviço e ISS</p></div>
+        </div>
+        <div class="card-corpo">
+          <div class="linha-form c3">
+            <div class="campo">
+              <label class="rotulo" for="valor">Valor do serviço <span class="obrig">*</span></label>
+              <div class="prefixo"><span>R$</span><input type="text" name="valor" id="valor" inputmode="decimal" value="<%= nota.valor ? String(nota.valor).replace('.', ',') : '' %>" required data-regra="valor" data-msg="Informe o valor do serviço." placeholder="0,00"></div>
+            </div>
+            <div class="campo">
+              <label class="rotulo" for="aliquota">Alíquota ISS
+                <span class="dica" tabindex="0" data-dica="Percentual do ISS do município (entre 2% e 5%). Em branco usa o padrão da empresa." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <div class="prefixo"><span style="left:auto;right:12px">%</span><input type="text" name="aliquota" id="aliquota" inputmode="decimal" style="padding-left:12px;padding-right:32px" value="<%= nota.aliquota != null ? String(nota.aliquota).replace('.', ',') : '' %>"></div>
+            </div>
+            <div class="campo">
+              <label class="rotulo" for="cod_mun_prestacao">Local da prestação
+                <span class="dica dica-esq" tabindex="0" data-dica="Código IBGE do município onde o serviço foi prestado. Em branco usa o município da empresa, que é o caso mais comum." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <input type="text" name="cod_mun_prestacao" id="cod_mun_prestacao" value="<%= nota.cod_mun_prestacao || '' %>" maxlength="7" inputmode="numeric" data-regra="ibge" placeholder="Município da empresa">
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" name="iss_retido" id="iss_retido" value="1" <%= nota.iss_retido == 1 ? 'checked' : '' %>>
+            <span>ISS retido pelo tomador
+              <span class="dica" tabindex="0" data-dica="Marque quando o cliente (tomador) recolhe o ISS e desconta do pagamento. Comum quando o tomador é empresa grande ou órgão público." aria-label="Ajuda"><%- ic('ajuda', 14) %></span>
+              <small>O valor líquido a receber diminui.</small></span></label>
+          <label class="check"><input type="checkbox" name="salvar_servico" value="1"><span>Salvar este serviço no cadastro da empresa<small>Para reaproveitar na próxima nota.</small></span></label>
+        </div>
+      </section>
+    </div>
+
+    <aside>
+      <div class="card resumo">
+        <div class="card-cab"><h2>Resumo</h2><span class="badge cinza sem-ponto" id="r-amb" style="display:none"></span></div>
+        <div class="card-corpo">
+          <div class="resumo-linhas">
+            <div class="l"><span>Valor do serviço</span><span id="r-valor">R$ 0,00</span></div>
+            <div class="l"><span>ISS (<span id="r-aliq">0</span>%)</span><span id="r-iss">R$ 0,00</span></div>
+            <div class="l"><span>Retenção de ISS</span><span id="r-ret">—</span></div>
+          </div>
+          <div class="resumo-total">
+            <span>Valor líquido</span>
+            <strong id="r-liq">R$ 0,00</strong>
+          </div>
+          <label class="check" style="margin-bottom:14px"><input type="checkbox" name="enviar_email" value="1" <%= nota.enviar_email == 1 ? 'checked' : '' %>><span>Enviar por e-mail ao tomador<small>PDF e XML anexados, assim que for emitida.</small></span></label>
+          <button class="btn btn-pri btn-lg btn-bloco" data-carregando="Enviando…"><%- ic('enviar') %><%- ic('carregando', 16, 'giro') %> <span>Emitir nota</span></button>
+          <div class="resumo-meta"><%- ic('escudo', 14) %> Assinada digitalmente e enviada à Sefin Nacional.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</form>
+
+<script>
+(function () {
+  const emp = document.getElementById('empresa');
+  const tom = document.getElementById('tomador');
+  const serv = document.getElementById('servico');
+  const novo = document.getElementById('novo-tomador');
+  const aviso = document.getElementById('aviso-ambiente');
+  const rAmb = document.getElementById('r-amb');
+  const campos = ['descricao', 'cod_trib_nac', 'cod_nbs', 'valor', 'aliquota'].reduce((o, k) => (o[k] = document.getElementById(k), o), {});
+  let dados = null;
+
+  const num = v => { v = String(v || '').trim(); if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.'); return Number(v) || 0; };
+  const brl = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const br = v => v == null ? '' : String(v).replace('.', ',');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function resumo() {
+    const valor = num(campos.valor.value), aliq = num(campos.aliquota.value);
+    const iss = Math.round(valor * aliq) / 100;
+    const ret = document.getElementById('iss_retido').checked;
+    document.getElementById('r-valor').textContent = brl(valor);
+    document.getElementById('r-aliq').textContent = br(aliq);
+    document.getElementById('r-iss').textContent = brl(iss);
+    document.getElementById('r-ret').textContent = ret ? '− ' + brl(iss) : 'Não';
+    document.getElementById('r-liq').textContent = brl(ret ? valor - iss : valor);
+  }
+  ['input', 'change'].forEach(ev => document.getElementById('form-nota').addEventListener(ev, resumo));
+
+  function carregando(sim) {
+    ['sk-tomador', 'sk-servico'].forEach(id => { document.getElementById(id).style.display = sim ? 'block' : 'none'; });
+  }
+
+  async function carregar() {
+    serv.innerHTML = '<option value="">Nenhum (preencher manualmente)</option>';
+    aviso.textContent = '';
+    rAmb.style.display = 'none';
+    if (!emp.value) { tom.innerHTML = '<option value="">Selecione a empresa primeiro</option>'; novo.href = '#'; return; }
+    novo.href = '/empresas/' + emp.value + '/tomadores/novo?voltar=nota';
+    carregando(true);
+    try {
+      const r = await fetch('/empresas/' + emp.value + '/dados.json');
+      dados = await r.json();
+    } finally { carregando(false); }
+    const sel = tom.getAttribute('data-valor');
+    tom.innerHTML = (dados.tomadores.length ? '<option value="">Selecione o tomador…</option>' : '<option value="">Nenhum tomador cadastrado — clique em Novo</option>')
+      + dados.tomadores.map(t => `<option value="${t.id}" ${String(t.id) === sel ? 'selected' : ''}>${esc(t.nome)} · ${t.documento}</option>`).join('');
+    serv.innerHTML += dados.servicos.map(s => `<option value="${s.id}">${esc(s.descricao.slice(0, 80))}${s.valor ? ' (' + brl(s.valor) + ')' : ''}</option>`).join('');
+    const e = dados.empresa;
+    if (!campos.cod_trib_nac.value && e.cod_trib_nac_padrao) campos.cod_trib_nac.value = e.cod_trib_nac_padrao;
+    if (!campos.aliquota.value && e.aliquota_padrao != null) campos.aliquota.value = br(e.aliquota_padrao);
+    const nomes = { simulacao: 'Simulação', homologacao: 'Homologação', producao: 'Produção' };
+    rAmb.textContent = nomes[e.ambiente];
+    rAmb.className = 'badge sem-ponto ' + (e.ambiente === 'producao' ? 'verde' : 'laranja');
+    rAmb.style.display = '';
+    if (e.ambiente !== 'producao') aviso.textContent = 'Esta empresa está em ' + nomes[e.ambiente].toLowerCase() + ': a nota não terá valor fiscal.';
+    else if (!e.tem_certificado) aviso.innerHTML = '<span style="color:var(--erro)">Empresa sem certificado digital — a emissão vai falhar.</span>';
+    resumo();
+  }
+
+  serv.addEventListener('change', () => {
+    const s = dados && dados.servicos.find(x => String(x.id) === serv.value);
+    if (!s) return;
+    campos.descricao.value = s.descricao;
+    campos.cod_trib_nac.value = s.cod_trib_nac || '';
+    campos.cod_nbs.value = s.cod_nbs || '';
+    if (s.valor) campos.valor.value = br(s.valor);
+    if (s.aliquota != null) campos.aliquota.value = br(s.aliquota);
+    document.getElementById('iss_retido').checked = !!s.iss_retido;
+    resumo();
+  });
+
+  emp.addEventListener('change', () => { tom.setAttribute('data-valor', ''); carregar(); });
+  if (emp.value) carregar();
+  resumo();
+})();
+</script>
+<% } %>
+<%- include('../partials/footer') %>

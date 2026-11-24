@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+<script>window.STATUS_URL = '/portal/status.json';</script>
+<% const nomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; const mesTxt = m => nomes[Number(m.slice(5, 7)) - 1] + ' de ' + m.slice(0, 4); const emitidas = notas.filter(n => n.status === 'emitida'); %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Minhas notas</h1>
+    <p class="subtitulo"><%= empresaPortal.razao_social %> · <%= u.fmtDoc(empresaPortal.cnpj) %></p>
+  </div>
+  <div class="acoes">
+    <form method="get">
+      <select name="mes" aria-label="Competência" onchange="this.form.submit()" style="min-width:200px">
+        <% meses.forEach(m => { %><option value="<%= m %>" <%= m === mes ? 'selected' : '' %>><%= mesTxt(m) %></option><% }) %>
+      </select>
+    </form>
+    <% if (empresaPortal.portal_pode_emitir) { %><a class="btn btn-pri" href="/portal/nova"><%- ic('emitir') %> Emitir nota</a><% } %>
+  </div>
+</div>
+
+<div class="grade g3 mb">
+  <div class="metrica"><div class="metrica-topo"><span class="metrica-rot">Notas emitidas</span><span class="metrica-ic cor-pri"><%- ic('nota', 18) %></span></div><div class="metrica-valor"><%= emitidas.length %></div><div class="metrica-rodape"><%= mesTxt(mes) %></div></div>
+  <div class="metrica"><div class="metrica-topo"><span class="metrica-rot">Faturado</span><span class="metrica-ic cor-ok"><%- ic('carteira', 18) %></span></div><div class="metrica-valor"><%= u.fmtMoeda(total) %></div><div class="metrica-rodape">Notas autorizadas no mês</div></div>
+  <div class="metrica"><div class="metrica-topo"><span class="metrica-rot">ISS estimado</span><span class="metrica-ic cor-aviso"><%- ic('porcento', 18) %></span></div><div class="metrica-valor"><%= u.fmtMoeda(emitidas.reduce((s, n) => s + (n.valor_iss || 0), 0)) %></div><div class="metrica-rodape">Soma do ISS das notas</div></div>
+</div>
+
+<div class="card">
+  <% if (!notas.length) { %>
+    <%- include('../partials/vazio', { icone: 'nota', tituloVazio: 'Nenhuma nota nesta competência', texto: 'Escolha outro mês no seletor acima' + (empresaPortal.portal_pode_emitir ? ' ou emita uma nota.' : '.'), acaoHref: empresaPortal.portal_pode_emitir ? '/portal/nova' : null, acaoTxt: 'Emitir nota' }) %>
+  <% } else { %>
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Nota</th><th>Cliente</th><th>Competência</th><th class="num">Valor</th><th>Status</th><th><span class="sr">Ações</span></th></tr></thead>
+    <tbody>
+    <% notas.forEach(n => { const temArq = n.status === 'emitida' || n.status === 'cancelada'; %>
+      <tr class="clicavel" data-href="/portal/notas/<%= n.id %>" data-nota-id="<%= n.id %>" data-nota-status="<%= n.status %>">
+        <td class="td-titulo"><a href="/portal/notas/<%= n.id %>" class="pri"><%= n.numero_nfse ? 'Nº ' + n.numero_nfse : 'DPS ' + n.numero_dps %></a></td>
+        <td data-rot="Cliente"><span><%= n.tomador_nome || '—' %><span class="sec esconder-mob"><%= u.fmtDoc(n.tomador_doc) %></span></span></td>
+        <td data-rot="Competência"><%= u.fmtData(n.competencia) %></td>
+        <td class="num" data-rot="Valor"><strong style="font-weight:600"><%= u.fmtMoeda(n.valor) %></strong></td>
+        <td data-rot="Status"><%- include('../partials/status', { status: n.status }) %></td>
+        <td class="acoes-linha">
+          <% if (temArq) { %>
+          <details class="menu-acoes">
+            <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Baixar"><%- ic('download') %></summary>
+            <div class="menu-pop">
+              <a href="/portal/notas/<%= n.id %>/pdf" target="_blank"><%- ic('pdf') %> Baixar PDF</a>
+              <a href="/portal/notas/<%= n.id %>/xml"><%- ic('xml') %> Baixar XML</a>
+            </div>
+          </details>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

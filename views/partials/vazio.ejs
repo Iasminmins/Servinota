@@ -1,0 +1,6 @@
+<div class="vazio <%= typeof compacto !== 'undefined' && compacto ? 'compacto' : '' %>">
+  <div class="vazio-ic"><%- ic(typeof icone !== 'undefined' ? icone : 'vazio', 22) %></div>
+  <h3><%= tituloVazio %></h3>
+  <% if (typeof texto !== 'undefined' && texto) { %><p><%= texto %></p><% } %>
+  <% if (typeof acaoHref !== 'undefined' && acaoHref) { %><a class="btn btn-pri btn-sm" href="<%= acaoHref %>"><%- ic('plus', 14) %> <%= acaoTxt %></a><% } %>
+</div>

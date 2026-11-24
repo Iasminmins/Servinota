@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <%- include('head') %>
+  <meta name="csrf" content="<%= csrf %>">
+</head>
+<body class="<%= banner ? 'tem-banner' : '' %>">
+<% if (banner) { %>
+  <div class="banner-amb" role="status"><%- ic('alerta', 14) %> <span><%= banner.txt %></span><% if (banner.link) { %> <a href="<%= banner.link %>">Ver empresas</a><% } %></div>
+<% } %>
+<div class="app">
+  <aside class="lateral" id="lateral" aria-label="Menu principal">
+    <div class="lat-topo">
+      <%- include('logo', { href: user.papel === 'cliente' ? '/portal' : '/', idLogo: 'lat' }) %>
+      <button class="btn btn-fantasma btn-ic btn-sm btn-recolher" type="button" data-recolher title="Recolher menu" aria-label="Recolher menu"><%- ic('recolher', 18) %></button>
+    </div>
+
+    <nav class="nav">
+      <% const at = (cond) => cond ? 'ativo' : ''; %>
+      <% const item = (href, icone, txt, cond, extra = '') => `<a href="${href}" class="${at(cond)} ${extra}" title="${txt}"${cond ? ' aria-current="page"' : ''}>${ic(icone, 18)}<span class="nav-txt">${txt}</span></a>`; %>
+      <% if (user.papel === 'cliente') { %>
+        <% if (typeof empresaPortal !== 'undefined' && empresaPortal.portal_pode_emitir) { %>
+          <%- item('/portal/nova', 'emitir', 'Emitir nota', caminho === '/portal/nova' || caminho.startsWith('/portal/tomadores'), 'destaque') %>
+        <% } %>
+        <%- item('/portal', 'nota', 'Minhas notas', caminho === '/portal' || caminho.startsWith('/portal/notas')) %>
+      <% } else { %>
+        <%- item('/notas/nova', 'emitir', 'Emitir nota', caminho === '/notas/nova', 'destaque') %>
+        <%- item('/', 'painel', 'Painel', caminho === '/') %>
+        <div class="nav-grupo">Emissão</div><div class="nav-grupo-sep"></div>
+        <%- item('/notas', 'nota', 'Notas fiscais', caminho.startsWith('/notas') && caminho !== '/notas/nova') %>
+        <%- item('/recorrencias', 'recorrente', 'Recorrentes', caminho.startsWith('/recorrencias')) %>
+        <%- item('/importacao', 'upload', 'Importar planilha', caminho.startsWith('/importacao')) %>
+        <div class="nav-grupo">Cadastros</div><div class="nav-grupo-sep"></div>
+        <%- item('/empresas', 'empresa', 'Empresas', caminho.startsWith('/empresas')) %>
+        <% if (user.papel === 'admin') { %>
+          <%- item('/usuarios', 'usuarios', 'Usuários', caminho.startsWith('/usuarios')) %>
+          <div class="nav-grupo">Escritório</div><div class="nav-grupo-sep"></div>
+          <%- item('/configuracoes', 'config', 'Configurações', caminho === '/configuracoes') %>
+          <%- item('/configuracoes/logs', 'historico', 'Histórico', caminho === '/configuracoes/logs') %>
+        <% } %>
+      <% } %>
+    </nav>
+
+    <div class="lat-rodape">
+      <details class="menu-acoes" style="display:block">
+        <summary class="perfil" title="<%= user.nome %>">
+          <span class="avatar"><%= iniciais %></span>
+          <span class="perfil-txt">
+            <strong><%= user.nome %></strong>
+            <span><%= user.papel === 'cliente' && typeof empresaPortal !== 'undefined' ? empresaPortal.razao_social : escritorioNome %></span>
+          </span>
+          <%- ic('cima', 16) %>
+        </summary>
+        <div class="menu-pop">
+          <div class="menu-cab"><%= user.email %></div>
+          <a href="/minha-conta"><%- ic('usuario') %> Minha conta</a>
+          <button type="button" data-tema-toggle><%- ic('lua') %> <span data-tema-txt>Modo escuro</span></button>
+          <hr>
+          <form method="post" action="/sair"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="perigo" data-livre><%- ic('sair') %> Sair</button></form>
+        </div>
+      </details>
+    </div>
+  </aside>
+  <div class="overlay" data-fechar-gaveta></div>
+
+  <div class="principal">
+    <header class="topo-mobile">
+      <button class="btn btn-fantasma btn-ic" type="button" data-abrir-gaveta aria-label="Abrir menu"><%- ic('menu', 20) %></button>
+      <%- include('logo', { href: user.papel === 'cliente' ? '/portal' : '/', idLogo: 'mob' }) %>
+      <span class="avatar" style="width:30px;height:30px;font-size:11px"><%= iniciais %></span>
+    </header>
+
+    <div class="toasts" aria-live="polite">
+      <% (flash || []).filter(f => f.tipo !== 'erro').forEach(f => { %>
+        <div class="toast <%= f.tipo %>" role="status">
+          <span class="ic-toast"><%- ic(f.tipo === 'ok' ? 'check' : 'info', 14) %></span>
+          <div class="toast-txt"><%= f.msg %></div>
+          <button class="toast-fechar" type="button" aria-label="Fechar"><%- ic('x', 14) %></button>
+        </div>
+      <% }) %>
+    </div>
+
+    <main class="conteudo" id="conteudo">
+      <% const errosFlash = (flash || []).filter(f => f.tipo === 'erro'); %>
+      <% if (errosFlash.length) { %>
+        <div class="alerta erro" role="alert">
+          <%- ic('erro', 18) %>
+          <div class="alerta-corpo">
+            <% if (errosFlash.length === 1) { %><%= errosFlash[0].msg %><% } else { %>
+              <strong>Corrija os pontos abaixo:</strong>
+              <ul style="margin:4px 0 0;padding-left:18px"><% errosFlash.forEach(e => { %><li><%= e.msg %></li><% }) %></ul>
+            <% } %>
+          </div>
+        </div>
+      <% } %>

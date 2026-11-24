@@ -1,0 +1,41 @@
+<%# campos de endereco com busca automatica pelo CEP (ViaCEP devolve o codigo IBGE) %>
+<div class="linha-form" style="grid-template-columns: minmax(0, 160px) minmax(0, 1fr) minmax(0, 110px)">
+  <div class="campo">
+    <label class="rotulo" for="cep-<%= obj.id || 'n' %>">CEP</label>
+    <input type="text" id="cep-<%= obj.id || 'n' %>" name="cep" value="<%= u.fmtCep(obj.cep) %>" data-cep maxlength="9" inputmode="numeric" placeholder="00000-000">
+    <div class="ajuda" data-cep-msg>Preenche o endereço sozinho.</div>
+  </div>
+  <div class="campo">
+    <label class="rotulo">Logradouro</label>
+    <input type="text" name="logradouro" value="<%= obj.logradouro || '' %>" data-end="logradouro">
+  </div>
+  <div class="campo">
+    <label class="rotulo">Número</label>
+    <input type="text" name="numero" value="<%= obj.numero || '' %>">
+  </div>
+</div>
+<div class="linha-form c2">
+  <div class="campo">
+    <label class="rotulo">Complemento</label>
+    <input type="text" name="complemento" value="<%= obj.complemento || '' %>">
+  </div>
+  <div class="campo">
+    <label class="rotulo">Bairro</label>
+    <input type="text" name="bairro" value="<%= obj.bairro || '' %>" data-end="bairro">
+  </div>
+</div>
+<div class="linha-form" style="grid-template-columns: minmax(0, 1fr) minmax(0, 80px) minmax(0, 160px)">
+  <div class="campo">
+    <label class="rotulo">Município</label>
+    <input type="text" name="municipio" value="<%= obj.municipio || '' %>" data-end="localidade">
+  </div>
+  <div class="campo">
+    <label class="rotulo">UF</label>
+    <input type="text" name="uf" value="<%= obj.uf || '' %>" maxlength="2" data-end="uf" style="text-transform:uppercase">
+  </div>
+  <div class="campo">
+    <label class="rotulo">Cód. IBGE <% if (typeof ibgeObrig !== 'undefined' && ibgeObrig) { %><span class="obrig">*</span><% } %>
+      <span class="dica dica-esq" tabindex="0" data-dica="Código de 7 dígitos do município no IBGE. A busca por CEP preenche automaticamente." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+    <input type="text" name="cod_municipio" value="<%= obj.cod_municipio || '' %>" maxlength="7" inputmode="numeric" data-end="ibge" data-regra="ibge" <%= typeof ibgeObrig !== 'undefined' && ibgeObrig ? 'required data-msg="Informe o código IBGE (use a busca por CEP)."' : '' %>>
+  </div>
+</div>

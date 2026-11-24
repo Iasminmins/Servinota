@@ -1,0 +1,47 @@
+<%- include('../partials/header') %>
+<% const corPapel = { admin: 'pri', operador: 'azul', cliente: 'cinza' }; %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Usuários</h1>
+    <p class="subtitulo">Quem acessa o sistema: a equipe do escritório e os clientes no portal.</p>
+  </div>
+  <div class="acoes"><a class="btn btn-pri" href="/usuarios/novo"><%- ic('plus') %> Novo usuário</a></div>
+</div>
+<div class="card">
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Usuário</th><th>Perfil</th><th>Último acesso</th><th>Situação</th><th><span class="sr">Ações</span></th></tr></thead>
+    <tbody>
+    <% usuarios.forEach(x => { const ini = String(x.nome).trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase(); %>
+      <tr class="<%= x.ativo ? '' : 'inativo' %>">
+        <td class="td-titulo">
+          <div class="flex" style="gap:12px">
+            <span class="avatar esconder-mob" style="width:34px;height:34px;<%= x.papel === 'cliente' ? 'background:var(--n400)' : '' %>"><%= ini %></span>
+            <span><span class="pri"><%= x.nome %><%= x.id === user.id ? ' (você)' : '' %></span><span class="sec"><%= x.email %></span></span>
+          </div>
+        </td>
+        <td data-rot="Perfil"><span><span class="badge sem-ponto <%= corPapel[x.papel] %>"><%= PAPEIS[x.papel] %></span><% if (x.razao_social) { %><span class="sec"><%= x.razao_social %></span><% } %></span></td>
+        <td data-rot="Último acesso"><%= u.fmtData(x.ultimo_acesso) || 'Nunca' %></td>
+        <td data-rot="Situação"><span class="badge <%= x.ativo ? 'verde' : 'cinza' %>"><%= x.ativo ? 'Ativo' : 'Inativo' %></span></td>
+        <td class="acoes-linha">
+          <details class="menu-acoes">
+            <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Mais ações"><%- ic('mais') %></summary>
+            <div class="menu-pop">
+              <a href="/usuarios/<%= x.id %>/editar"><%- ic('editar') %> Editar</a>
+              <% if (x.id !== user.id) { %>
+                <form method="post" action="/usuarios/<%= x.id %>/ativo"><input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="<%= x.ativo ? 'perigo' : '' %>" data-livre><%- ic(x.ativo ? 'cancelar' : 'check') %> <%= x.ativo ? 'Desativar' : 'Reativar' %></button></form>
+              <% } %>
+            </div>
+          </details>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</div>
+<div class="grade g3">
+  <div class="card"><div class="card-corpo"><span class="badge pri sem-ponto">Administrador</span><p class="texto-2" style="margin:10px 0 0;font-size:13px">Acesso total, inclusive usuários e configurações do escritório.</p></div></div>
+  <div class="card"><div class="card-corpo"><span class="badge azul sem-ponto">Operador</span><p class="texto-2" style="margin:10px 0 0;font-size:13px">Empresas, emissão, recorrências e importação.</p></div></div>
+  <div class="card"><div class="card-corpo"><span class="badge cinza sem-ponto">Cliente (portal)</span><p class="texto-2" style="margin:10px 0 0;font-size:13px">Só o portal da própria empresa: ver, baixar e, se liberado, emitir.</p></div></div>
+</div>
+<%- include('../partials/footer') %>

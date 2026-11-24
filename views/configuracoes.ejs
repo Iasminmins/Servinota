@@ -1,0 +1,64 @@
+<%- include('partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Configurações</h1>
+    <p class="subtitulo">Dados do escritório e envio das notas por e-mail.</p>
+  </div>
+</div>
+<form method="post" action="/configuracoes" style="max-width:920px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num"><%- ic('empresa', 14) %></span><div><h2>Escritório</h2><p>Aparece no rodapé dos e-mails</p></div></div>
+    <div class="card-corpo">
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">Nome</label><input type="text" name="nome" value="<%= esc.nome %>" required></div>
+        <div class="campo"><label class="rotulo">CNPJ</label><input type="text" name="cnpj" value="<%= u.fmtDoc(esc.cnpj) %>" data-doc></div>
+      </div>
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">E-mail</label><input type="email" name="email" value="<%= esc.email || '' %>"></div>
+        <div class="campo"><label class="rotulo">Telefone</label><input type="text" name="telefone" value="<%= esc.telefone || '' %>"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num"><%- ic('email', 14) %></span><div><h2>Servidor de e-mail (SMTP)</h2><p>Usado para enviar PDF e XML aos tomadores</p></div>
+      <span class="badge <%= esc.smtp_host ? 'verde' : 'cinza' %>" style="margin-left:auto"><%= esc.smtp_host ? 'Configurado' : 'Não configurado' %></span></div>
+    <div class="card-corpo">
+      <div class="linha-form" style="grid-template-columns: minmax(0, 1fr) minmax(0, 110px)">
+        <div class="campo"><label class="rotulo">Servidor</label><input type="text" name="smtp_host" value="<%= esc.smtp_host || '' %>" placeholder="smtp.gmail.com"></div>
+        <div class="campo"><label class="rotulo">Porta</label><input type="number" name="smtp_port" value="<%= esc.smtp_port || 587 %>"></div>
+      </div>
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">Usuário</label><input type="text" name="smtp_usuario" value="<%= esc.smtp_usuario || '' %>" autocomplete="off"></div>
+        <div class="campo"><label class="rotulo">Senha</label><input type="password" name="smtp_senha" placeholder="<%= esc.smtp_senha ? '•••••••• (salva)' : '' %>" autocomplete="new-password">
+          <div class="ajuda">Em branco mantém a senha atual.</div></div>
+      </div>
+      <div class="campo"><label class="rotulo">Remetente</label><input type="text" name="smtp_remetente" value="<%= esc.smtp_remetente || '' %>" placeholder="Escritório X <notas@escritoriox.com.br>"></div>
+      <label class="check"><input type="checkbox" name="smtp_seguro" value="1" <%= esc.smtp_seguro ? 'checked' : '' %>><span>Conexão SSL direta<small>Normalmente na porta 465. Na 587 deixe desmarcado.</small></span></label>
+      <div class="alerta info" style="margin:14px 0 0"><%- ic('info', 16) %><div class="alerta-corpo">Gmail: use uma “senha de app”. Para volume maior, Resend, Brevo ou Amazon SES entregam melhor e saem mais barato.</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num"><%- ic('editar', 14) %></span><div><h2>Modelo do e-mail</h2><p>Texto enviado junto com a nota</p></div></div>
+    <div class="card-corpo">
+      <div class="campo"><label class="rotulo">Assunto</label><input type="text" name="email_assunto" value="<%= esc.email_assunto || '' %>"></div>
+      <div class="campo"><label class="rotulo">Mensagem</label><textarea name="email_corpo" rows="6"><%= esc.email_corpo || '' %></textarea>
+        <div class="ajuda">Variáveis: <code>{numero}</code> <code>{prestador}</code> <code>{tomador}</code> <code>{valor}</code> <code>{competencia}</code> <code>{chave}</code> <code>{escritorio}</code></div></div>
+    </div>
+    <div class="card-rodape acoes"><button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar configurações</button></div>
+  </section>
+</form>
+
+<div class="card" style="max-width:920px">
+  <div class="card-cab"><div><h2>Testar envio</h2><p>Manda um e-mail de teste com as configurações salvas</p></div></div>
+  <form class="card-corpo" method="post" action="/configuracoes/testar-email">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="input-grupo" style="max-width:520px">
+      <input type="email" name="para" value="<%= user.email %>" aria-label="E-mail de destino">
+      <button class="btn" style="height:40px"><%- ic('enviar') %><%- ic('carregando', 16, 'giro') %> Enviar teste</button>
+    </div>
+  </form>
+</div>
+<%- include('partials/footer') %>

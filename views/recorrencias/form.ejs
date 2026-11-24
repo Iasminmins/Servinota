@@ -1,0 +1,78 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/recorrencias">Emissão recorrente</a> <%- ic('direita', 12) %> <span><%= rec.id ? 'Editar' : 'Nova' %></span></div>
+    <h1><%= titulo %></h1>
+    <p class="subtitulo">A nota é gerada e transmitida automaticamente no dia escolhido de cada mês.</p>
+  </div>
+</div>
+<form method="post" action="/recorrencias<%= rec.id ? '/' + rec.id : '' %>" data-validar style="max-width:880px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">1</span><div><h2>Prestador e tomador</h2></div></div>
+    <div class="card-corpo">
+      <div class="linha-form c2">
+        <div class="campo">
+          <label class="rotulo" for="empresa">Empresa prestadora <span class="obrig">*</span></label>
+          <select name="empresa_id" id="empresa" required data-msg="Selecione a empresa.">
+            <option value="">Selecione…</option>
+            <% empresas.forEach(e => { %><option value="<%= e.id %>" <%= String(rec.empresa_id) === String(e.id) ? 'selected' : '' %>><%= e.razao_social %></option><% }) %>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="rotulo" for="tomador">Tomador <span class="obrig">*</span></label>
+          <select name="tomador_id" id="tomador" required data-msg="Selecione o tomador." data-valor="<%= rec.tomador_id || '' %>"><option value="">Selecione a empresa</option></select>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">2</span><div><h2>Serviço e valor</h2></div></div>
+    <div class="card-corpo">
+      <div class="campo">
+        <label class="rotulo" for="descricao">Descrição <span class="obrig">*</span></label>
+        <textarea name="descricao" id="descricao" rows="3" required data-msg="Informe a descrição."><%= rec.descricao || '' %></textarea>
+        <div class="ajuda">Use <code>{mes}</code>, <code>{ano}</code> ou <code>{mes_nome}</code> para preencher com a competência. Ex.: “Honorários contábeis {mes}/{ano}”.</div>
+      </div>
+      <div class="linha-form c4">
+        <div class="campo"><label class="rotulo">Valor <span class="obrig">*</span></label><div class="prefixo"><span>R$</span><input type="text" name="valor" value="<%= rec.valor ? String(rec.valor).replace('.', ',') : '' %>" required data-regra="valor" inputmode="decimal"></div></div>
+        <div class="campo"><label class="rotulo">Dia do mês <span class="obrig">*</span>
+          <span class="dica" tabindex="0" data-dica="Se o mês tiver menos dias (ex.: 31 em fevereiro), a nota sai no último dia." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+          <input type="number" name="dia_mes" min="1" max="31" value="<%= rec.dia_mes || 1 %>" required></div>
+        <div class="campo"><label class="rotulo">Cód. tributação</label><input type="text" name="cod_trib_nac" id="cod_trib_nac" value="<%= rec.cod_trib_nac || '' %>" maxlength="6" inputmode="numeric" data-regra="cod6"></div>
+        <div class="campo"><label class="rotulo">Alíquota (%)</label><input type="text" name="aliquota" id="aliquota" value="<%= rec.aliquota != null ? String(rec.aliquota).replace('.', ',') : '' %>" inputmode="decimal"></div>
+      </div>
+      <input type="hidden" name="cod_nbs" value="<%= rec.cod_nbs || '' %>">
+      <label class="check"><input type="checkbox" name="iss_retido" value="1" <%= rec.iss_retido == 1 ? 'checked' : '' %>><span>ISS retido pelo tomador</span></label>
+      <label class="check"><input type="checkbox" name="enviar_email" value="1" <%= rec.enviar_email == 1 ? 'checked' : '' %>><span>Enviar a nota por e-mail ao tomador</span></label>
+      <label class="check"><input type="checkbox" name="ativo" value="1" <%= rec.ativo == 1 ? 'checked' : '' %>><span>Recorrência ativa</span></label>
+      <% if (!rec.id) { %>
+        <label class="check"><input type="checkbox" name="gerar_mes_atual" value="1"><span>Se o dia deste mês já passou, emitir também a deste mês</span></label>
+      <% } %>
+    </div>
+    <div class="card-rodape acoes">
+      <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar recorrência</button>
+      <a class="btn btn-fantasma" href="/recorrencias">Cancelar</a>
+    </div>
+  </section>
+</form>
+<script>
+(function () {
+  const emp = document.getElementById('empresa'), tom = document.getElementById('tomador');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function carregar() {
+    if (!emp.value) { tom.innerHTML = '<option value="">Selecione a empresa</option>'; return; }
+    tom.innerHTML = '<option value="">Carregando…</option>';
+    const d = await (await fetch('/empresas/' + emp.value + '/dados.json')).json();
+    const sel = tom.getAttribute('data-valor');
+    tom.innerHTML = (d.tomadores.length ? '<option value="">Selecione…</option>' : '<option value="">Empresa sem tomadores cadastrados</option>')
+      + d.tomadores.map(t => `<option value="${t.id}" ${String(t.id) === sel ? 'selected' : ''}>${esc(t.nome)}</option>`).join('');
+    const c = document.getElementById('cod_trib_nac'), a = document.getElementById('aliquota');
+    if (!c.value && d.empresa.cod_trib_nac_padrao) c.value = d.empresa.cod_trib_nac_padrao;
+    if (!a.value && d.empresa.aliquota_padrao != null) a.value = String(d.empresa.aliquota_padrao).replace('.', ',');
+  }
+  emp.addEventListener('change', () => { tom.setAttribute('data-valor', ''); carregar(); });
+  carregar();
+})();
+</script>
+<%- include('../partials/footer') %>

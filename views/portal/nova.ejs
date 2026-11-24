@@ -1,0 +1,85 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/portal">Minhas notas</a> <%- ic('direita', 12) %> <span>Emitir</span></div>
+    <h1>Emitir nota</h1>
+    <p class="subtitulo">A nota é transmitida em poucos segundos e fica disponível para download.</p>
+  </div>
+</div>
+<form method="post" action="/portal/notas" id="form-nota" data-validar>
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="grade g-form">
+    <div>
+      <section class="card">
+        <div class="secao-cab"><span class="secao-num">1</span><div><h2>Cliente</h2><p>Para quem você prestou o serviço</p></div></div>
+        <div class="card-corpo">
+          <div class="campo mb-0">
+            <label class="rotulo" for="tomador">Cliente (tomador) <span class="obrig">*</span></label>
+            <div class="input-grupo">
+              <select name="tomador_id" id="tomador" required data-msg="Selecione o cliente.">
+                <option value=""><%= tomadores.length ? 'Selecione…' : 'Nenhum cliente cadastrado — clique em Novo' %></option>
+                <% tomadores.forEach(t => { %><option value="<%= t.id %>" <%= String(nota.tomador_id) === String(t.id) ? 'selected' : '' %>><%= t.nome %> · <%= u.fmtDoc(t.documento) %></option><% }) %>
+              </select>
+              <a class="btn" href="/portal/tomadores/novo" style="height:40px"><%- ic('plus') %> Novo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="secao-cab"><span class="secao-num">2</span><div><h2>Serviço</h2><p>O que foi feito e quanto custou</p></div></div>
+        <div class="card-corpo">
+          <% if (servicos.length) { %>
+          <div class="campo">
+            <label class="rotulo" for="servico">Serviço cadastrado</label>
+            <select id="servico">
+              <option value="">Preencher manualmente</option>
+              <% servicos.forEach(s => { %><option value="<%= s.id %>" data-desc="<%= s.descricao %>" data-cod="<%= s.cod_trib_nac %>" data-valor="<%= s.valor || '' %>" data-aliq="<%= s.aliquota != null ? s.aliquota : '' %>"><%= s.descricao.slice(0, 80) %></option><% }) %>
+            </select>
+          </div>
+          <% } %>
+          <div class="campo">
+            <label class="rotulo" for="descricao">Descrição do serviço <span class="obrig">*</span></label>
+            <textarea name="descricao" id="descricao" rows="4" required data-msg="Descreva o serviço."><%= nota.descricao || '' %></textarea>
+          </div>
+          <div class="linha-form c3">
+            <div class="campo"><label class="rotulo">Valor <span class="obrig">*</span></label><div class="prefixo"><span>R$</span><input type="text" name="valor" id="valor" value="<%= nota.valor || '' %>" required data-regra="valor" inputmode="decimal" placeholder="0,00"></div></div>
+            <div class="campo"><label class="rotulo">Competência</label><input type="date" name="competencia" value="<%= nota.competencia %>" max="<%= u.hojeISO() %>"></div>
+            <div class="campo"><label class="rotulo">Cód. tributação
+              <span class="dica dica-esq" tabindex="0" data-dica="Código do tipo de serviço. Já vem preenchido pelo escritório; só altere se ele pedir." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+              <input type="text" name="cod_trib_nac" id="cod" value="<%= nota.cod_trib_nac || empresaPortal.cod_trib_nac_padrao || '' %>" maxlength="6" data-regra="cod6" inputmode="numeric"></div>
+          </div>
+          <input type="hidden" name="aliquota" id="aliq" value="<%= nota.aliquota != null ? nota.aliquota : '' %>">
+        </div>
+      </section>
+    </div>
+    <aside>
+      <div class="card resumo">
+        <div class="card-cab"><h2>Resumo</h2></div>
+        <div class="card-corpo">
+          <div class="resumo-total" style="margin-top:0"><span>Valor da nota</span><strong id="r-valor">R$ 0,00</strong></div>
+          <label class="check" style="margin-bottom:14px"><input type="checkbox" name="enviar_email" value="1" <%= nota.enviar_email == 1 ? 'checked' : '' %>><span>Enviar por e-mail ao cliente</span></label>
+          <button class="btn btn-pri btn-lg btn-bloco" data-carregando="Enviando…"><%- ic('enviar') %><%- ic('carregando', 16, 'giro') %> <span>Emitir nota</span></button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</form>
+<script>
+(function () {
+  const v = document.getElementById('valor'), r = document.getElementById('r-valor');
+  const num = x => { x = String(x || '').trim(); if (x.includes(',')) x = x.replace(/\./g, '').replace(',', '.'); return Number(x) || 0; };
+  const atualiza = () => { r.textContent = num(v.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+  v.addEventListener('input', atualiza); atualiza();
+  const s = document.getElementById('servico');
+  if (s) s.addEventListener('change', () => {
+    const o = s.selectedOptions[0];
+    if (!o || !o.value) return;
+    document.getElementById('descricao').value = o.dataset.desc;
+    document.getElementById('cod').value = o.dataset.cod;
+    if (o.dataset.valor) v.value = o.dataset.valor.replace('.', ',');
+    document.getElementById('aliq').value = o.dataset.aliq;
+    atualiza();
+  });
+})();
+</script>
+<%- include('../partials/footer') %>

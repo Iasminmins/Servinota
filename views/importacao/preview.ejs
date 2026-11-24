@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/importacao">Importar planilha</a> <%- ic('direita', 12) %> <span>Conferir</span></div>
+    <h1>Conferir importação</h1>
+    <p class="subtitulo"><%= empresa.razao_social %> · <%= itens.length %> linha<%= itens.length === 1 ? '' : 's' %> lida<%= itens.length === 1 ? '' : 's' %></p>
+  </div>
+</div>
+
+<div class="grade g3 mb">
+  <div class="metrica"><div class="metrica-topo"><span class="metrica-rot">Prontas para emitir</span><span class="metrica-ic cor-ok"><%- ic('check', 18) %></span></div><div class="metrica-valor"><%= validos %></div></div>
+  <div class="metrica <%= itens.length - validos ? 'perigo' : '' %>"><div class="metrica-topo"><span class="metrica-rot">Com problema</span><span class="metrica-ic <%= itens.length - validos ? 'cor-erro' : 'cor-neutra' %>"><%- ic('alerta', 18) %></span></div><div class="metrica-valor"><%= itens.length - validos %></div><div class="metrica-rodape">Serão ignoradas</div></div>
+  <div class="metrica"><div class="metrica-topo"><span class="metrica-rot">Valor total</span><span class="metrica-ic cor-pri"><%- ic('carteira', 18) %></span></div><div class="metrica-valor"><%= u.fmtMoeda(total) %></div></div>
+</div>
+
+<div class="card">
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Linha</th><th>Tomador</th><th>Descrição</th><th>Competência</th><th class="num">Valor</th><th>Situação</th></tr></thead>
+    <tbody>
+    <% itens.forEach(i => { %>
+      <tr class="<%= i.erros.length ? 'erro-linha' : '' %>">
+        <td data-rot="Linha" class="num" style="text-align:left"><%= i.linha %></td>
+        <td class="td-titulo"><span class="pri"><%= i.tomador.nome || '—' %></span><span class="sec"><%= u.fmtDoc(i.tomador.documento) %></span></td>
+        <td data-rot="Descrição"><%= (i.nota.descricao || '').slice(0, 60) %></td>
+        <td data-rot="Competência"><%= i.nota.competencia ? u.fmtData(i.nota.competencia) : '—' %></td>
+        <td class="num" data-rot="Valor"><%= isNaN(i.nota.valor) ? '—' : u.fmtMoeda(i.nota.valor) %></td>
+        <td data-rot="Situação"><% if (i.erros.length) { %><span><span class="badge vermelho">Erro</span><span class="sec" style="color:var(--erro);white-space:normal;max-width:280px"><%= i.erros.join(' ') %></span></span><% } else { %><span class="badge verde">OK</span><% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <div class="card-rodape">
+    <% if (validos) { %>
+    <form class="flex" style="flex-wrap:wrap" method="post" action="/importacao/confirmar" data-confirma="Emitir <%= validos %> nota(s) para <%= empresa.razao_social %>?">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <input type="hidden" name="token" value="<%= token %>">
+      <button class="btn btn-pri"><%- ic('enviar') %><%- ic('carregando', 16, 'giro') %> Emitir <%= validos %> nota<%= validos === 1 ? '' : 's' %></button>
+      <a class="btn btn-fantasma" href="/importacao">Cancelar</a>
+      <% if (enviarEmail) { %><span class="legenda flex" style="gap:5px"><%- ic('email', 12) %> Cada nota será enviada por e-mail ao tomador.</span><% } %>
+    </form>
+    <% } else { %>
+      <div class="flex-entre"><span class="texto-2">Nenhuma linha válida. Corrija a planilha e envie de novo.</span><a class="btn" href="/importacao">Voltar</a></div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

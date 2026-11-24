@@ -1,0 +1,6 @@
+node_modules/
+data/
+.env
+*.pfx
+*.p12
+scripts/nota-exemplo.pdf

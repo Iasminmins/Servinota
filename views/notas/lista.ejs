@@ -1,0 +1,110 @@
+<%- include('../partials/header') %>
+<% const filtrado = !!qs; %>
+<div class="cab">
+  <div class="cab-txt">
+    <h1>Notas fiscais</h1>
+    <p class="subtitulo">Todas as NFS-e emitidas pelo escritório, de todas as empresas.</p>
+  </div>
+  <div class="acoes">
+    <details class="menu-acoes">
+      <summary class="btn"><%- ic('download') %> Exportar <%- ic('baixo', 14) %></summary>
+      <div class="menu-pop">
+        <a href="/notas/exportar.csv?<%= qs %>"><%- ic('planilha') %> Planilha CSV</a>
+        <a href="/notas/xmls.zip?<%= qs %>"><%- ic('xml') %> XMLs em .zip</a>
+      </div>
+    </details>
+    <a class="btn btn-pri" href="/notas/nova"><%- ic('emitir') %> Emitir nota</a>
+  </div>
+</div>
+
+<div class="card">
+  <form class="filtros" method="get" role="search">
+    <label class="input-ic">
+      <span class="sr">Buscar</span>
+      <%- ic('busca') %>
+      <input type="search" name="busca" value="<%= query.busca || '' %>" placeholder="Buscar por tomador, CPF/CNPJ, número ou chave">
+    </label>
+    <select name="empresa" aria-label="Empresa" onchange="this.form.submit()">
+      <option value="">Todas as empresas</option>
+      <% empresas.forEach(e => { %><option value="<%= e.id %>" <%= query.empresa == e.id ? 'selected' : '' %>><%= e.razao_social %></option><% }) %>
+    </select>
+    <select name="status" aria-label="Status" onchange="this.form.submit()">
+      <option value="">Todos os status</option>
+      <% Object.entries(u.STATUS).forEach(([k, s]) => { %><option value="<%= k %>" <%= query.status === k ? 'selected' : '' %>><%= s.txt %></option><% }) %>
+    </select>
+    <select name="mes" aria-label="Competência" onchange="this.form.submit()">
+      <option value="">Qualquer competência</option>
+      <% meses.forEach(m => { %><option value="<%= m.valor %>" <%= query.mes === m.valor ? 'selected' : '' %>><%= m.txt %></option><% }) %>
+    </select>
+    <button class="btn" data-livre><%- ic('filtro', 14) %> Filtrar</button>
+    <% if (filtrado) { %><a class="btn btn-fantasma" href="/notas"><%- ic('x', 14) %> Limpar filtros</a><% } %>
+  </form>
+</div>
+
+<div class="card">
+  <div class="resumo-faixa">
+    <span><strong><%= total %></strong> nota<%= total === 1 ? '' : 's' %></span>
+    <span class="sep"></span>
+    <span>Emitido <strong><%= u.fmtMoeda(soma) %></strong></span>
+    <span class="sep"></span>
+    <span>Cancelado <strong><%= u.fmtMoeda(cancelado) %></strong><% if (qtdCancelada) { %> <small>(<%= qtdCancelada %>)</small><% } %></span>
+  </div>
+  <% if (!notas.length) { %>
+    <% if (filtrado) { %>
+      <%- include('../partials/vazio', { icone: 'busca', tituloVazio: 'Nenhuma nota encontrada', texto: 'Tente outro termo de busca ou limpe os filtros.' }) %>
+    <% } else { %>
+      <%- include('../partials/vazio', { icone: 'nota', tituloVazio: 'Nenhuma nota por aqui ainda', texto: 'Emita a primeira nota ou importe várias de uma vez por planilha.', acaoHref: '/notas/nova', acaoTxt: 'Emitir nota' }) %>
+    <% } %>
+  <% } else { %>
+  <div class="tabela-wrap"><table class="tabela-cards">
+    <thead><tr><th>Nota</th><th>Prestador</th><th>Tomador</th><th>Competência</th><th class="num">Valor</th><th>Status</th><th><span class="sr">Ações</span></th></tr></thead>
+    <tbody>
+    <% notas.forEach(n => { const temArq = n.status === 'emitida' || n.status === 'cancelada'; %>
+      <tr class="clicavel" data-href="/notas/<%= n.id %>" data-nota-id="<%= n.id %>" data-nota-status="<%= n.status %>">
+        <td class="td-titulo">
+          <a href="/notas/<%= n.id %>" class="pri"><%= n.numero_nfse ? 'Nº ' + n.numero_nfse : 'Sem número' %></a>
+          <span class="sec">DPS <%= n.numero_dps %></span>
+        </td>
+        <td data-rot="Prestador"><%= n.razao_social %></td>
+        <td data-rot="Tomador"><span><%= n.tomador_nome || '—' %><span class="sec esconder-mob"><%= u.fmtDoc(n.tomador_doc) %></span></span></td>
+        <td data-rot="Competência" class="num" style="text-align:left"><%= u.fmtCompetencia(n.competencia) %></td>
+        <td class="num" data-rot="Valor"><strong style="font-weight:600"><%= u.fmtMoeda(n.valor) %></strong></td>
+        <td data-rot="Status">
+          <span><%- include('../partials/status', { status: n.status }) %>
+          <% if (n.status === 'erro' && n.mensagem) { %><span class="sec" title="<%= n.mensagem %>" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= n.mensagem %></span><% } %>
+          <% if (n.email_enviado_em) { %><span class="sec"><%- ic('email', 12) %> e-mail enviado</span><% } %></span>
+        </td>
+        <td class="acoes-linha">
+          <% if (temArq) { %>
+            <a class="btn btn-fantasma btn-ic btn-sm dica-esq esconder-mob" href="/notas/<%= n.id %>/pdf" target="_blank" data-dica="Baixar PDF" aria-label="Baixar PDF"><%- ic('pdf') %></a>
+          <% } %>
+          <details class="menu-acoes">
+            <summary class="btn btn-fantasma btn-ic btn-sm" aria-label="Mais ações"><%- ic('mais') %></summary>
+            <div class="menu-pop">
+              <a href="/notas/<%= n.id %>"><%- ic('olho') %> Ver detalhes</a>
+              <% if (temArq) { %>
+                <a href="/notas/<%= n.id %>/pdf" target="_blank"><%- ic('pdf') %> Baixar PDF</a>
+                <a href="/notas/<%= n.id %>/xml"><%- ic('xml') %> Baixar XML</a>
+              <% } %>
+              <a href="/notas/nova?copiar=<%= n.id %>"><%- ic('copiar') %> Duplicar</a>
+              <% if (n.status === 'erro') { %>
+                <hr>
+                <form method="post" action="/notas/<%= n.id %>/reenviar"><input type="hidden" name="_csrf" value="<%= csrf %>"><button data-livre><%- ic('reenviar') %> Tentar novamente</button></form>
+              <% } %>
+            </div>
+          </details>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <div class="paginacao">
+    <span>Página <%= pagina %> de <%= paginas %></span>
+    <div class="flex">
+      <% if (pagina > 1) { %><a class="btn btn-sm" href="?<%= qs %>&pagina=<%= pagina - 1 %>"><%- ic('esquerda', 14) %> Anterior</a><% } else { %><span class="btn btn-sm" aria-disabled="true" style="opacity:.45;pointer-events:none"><%- ic('esquerda', 14) %> Anterior</span><% } %>
+      <% if (pagina < paginas) { %><a class="btn btn-sm" href="?<%= qs %>&pagina=<%= pagina + 1 %>">Próxima <%- ic('direita', 14) %></a><% } else { %><span class="btn btn-sm" aria-disabled="true" style="opacity:.45;pointer-events:none">Próxima <%- ic('direita', 14) %></span><% } %>
+    </div>
+  </div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

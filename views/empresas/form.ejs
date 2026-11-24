@@ -1,0 +1,107 @@
+<%- include('../partials/header') %>
+<div class="cab">
+  <div class="cab-txt">
+    <div class="migalha"><a href="/empresas">Empresas</a> <%- ic('direita', 12) %> <% if (emp.id) { %><a href="/empresas/<%= emp.id %>"><%= emp.razao_social %></a> <%- ic('direita', 12) %> <span>Editar</span><% } else { %><span>Nova</span><% } %></div>
+    <h1><%= titulo %></h1>
+    <p class="subtitulo"><%= emp.id ? 'Altere os dados cadastrais, fiscais e de emissão.' : 'Digite o CNPJ e clique em buscar: o resto é preenchido automaticamente.' %></p>
+  </div>
+</div>
+<form method="post" action="<%= emp.id ? '/empresas/' + emp.id : '/empresas' %>" data-validar style="max-width:920px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">1</span><div><h2>Identificação</h2><p>Dados cadastrais da empresa</p></div></div>
+    <div class="card-corpo">
+      <div class="campo" style="max-width:420px">
+        <label class="rotulo" for="cnpj">CNPJ <span class="obrig">*</span></label>
+        <div class="input-grupo">
+          <input type="text" name="cnpj" id="cnpj" value="<%= u.fmtDoc(emp.cnpj) %>" data-doc data-regra="doc" required data-msg="Informe o CNPJ." inputmode="numeric" placeholder="00.000.000/0000-00">
+          <button type="button" class="btn" style="height:40px" data-busca-cnpj="#cnpj"><%- ic('busca') %><%- ic('carregando', 16, 'giro') %> Buscar</button>
+        </div>
+      </div>
+      <div class="linha-form c2">
+        <div class="campo"><label class="rotulo">Razão social <span class="obrig">*</span></label><input type="text" name="razao_social" value="<%= emp.razao_social || '' %>" required data-msg="Informe a razão social."></div>
+        <div class="campo"><label class="rotulo">Nome fantasia</label><input type="text" name="nome_fantasia" value="<%= emp.nome_fantasia || '' %>"></div>
+      </div>
+      <div class="linha-form c3">
+        <div class="campo"><label class="rotulo">Inscrição municipal
+          <span class="dica" tabindex="0" data-dica="Deixe em branco se o município não exigir na NFS-e Nacional. Se a Receita recusar por falta dela, preencha." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+          <input type="text" name="im" value="<%= emp.im || '' %>" inputmode="numeric"></div>
+        <div class="campo"><label class="rotulo">E-mail</label><input type="email" name="email" value="<%= emp.email || '' %>"></div>
+        <div class="campo"><label class="rotulo">Telefone</label><input type="text" name="telefone" value="<%= emp.telefone || '' %>"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">2</span><div><h2>Endereço</h2><p>O código IBGE define o município da emissão</p></div></div>
+    <div class="card-corpo"><%- include('../partials/endereco', { obj: emp, ibgeObrig: true }) %></div>
+  </section>
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">3</span><div><h2>Dados fiscais</h2><p>Regime e padrões usados nas notas</p></div></div>
+    <div class="card-corpo">
+      <div class="linha-form c3">
+        <div class="campo">
+          <label class="rotulo">Simples Nacional</label>
+          <select name="op_simples">
+            <option value="1" <%= emp.op_simples == 1 ? 'selected' : '' %>>Não optante</option>
+            <option value="2" <%= emp.op_simples == 2 ? 'selected' : '' %>>Optante — MEI</option>
+            <option value="3" <%= emp.op_simples == 3 ? 'selected' : '' %>>Optante — ME/EPP</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="rotulo">Regime especial</label>
+          <select name="reg_esp_trib">
+            <% [['0','Nenhum'],['1','Ato cooperado'],['2','Estimativa'],['3','Microempresa municipal'],['4','Notário ou registrador'],['5','Profissional autônomo'],['6','Sociedade de profissionais']].forEach(([v, t]) => { %>
+              <option value="<%= v %>" <%= String(emp.reg_esp_trib || 0) === v ? 'selected' : '' %>><%= t %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="campo">
+          <label class="rotulo">% tributos (Simples)
+            <span class="dica dica-esq" tabindex="0" data-dica="Percentual aproximado de tributos do Simples Nacional mostrado na nota. Só para ME/EPP; em branco não é informado." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+          <input type="text" name="p_tot_trib_sn" value="<%= emp.p_tot_trib_sn || '' %>" placeholder="ex.: 6,00" inputmode="decimal">
+        </div>
+      </div>
+      <div class="linha-form c3">
+        <div class="campo">
+          <label class="rotulo">Cód. tributação padrão
+            <span class="dica" tabindex="0" data-dica="Código de 6 dígitos da lista nacional usado quando a nota não informar outro. Ex.: 171901 = contabilidade." aria-label="Ajuda"><%- ic('ajuda', 14) %></span></label>
+          <input type="text" name="cod_trib_nac_padrao" value="<%= emp.cod_trib_nac_padrao || '' %>" maxlength="6" inputmode="numeric" data-regra="cod6" placeholder="000000">
+        </div>
+        <div class="campo">
+          <label class="rotulo">Alíquota ISS padrão (%)</label>
+          <input type="text" name="aliquota_padrao" value="<%= emp.aliquota_padrao != null ? String(emp.aliquota_padrao).replace('.', ',') : '' %>" inputmode="decimal">
+        </div>
+        <div class="campo" style="align-self:end">
+          <label class="check"><input type="checkbox" name="informar_aliquota" value="1" <%= emp.informar_aliquota == 1 ? 'checked' : '' %>><span>Informar alíquota na DPS<small>Só se o município exigir.</small></span></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="secao-cab"><span class="secao-num">4</span><div><h2>Emissão</h2><p>Ambiente e numeração da DPS</p></div></div>
+    <div class="card-corpo">
+      <div class="linha-form" style="grid-template-columns: minmax(0, 1fr) minmax(0, 120px) minmax(0, 160px)">
+        <div class="campo">
+          <label class="rotulo">Ambiente</label>
+          <select name="ambiente">
+            <% Object.entries(u.AMBIENTES).forEach(([v, t]) => { %><option value="<%= v %>" <%= emp.ambiente === v ? 'selected' : '' %>><%= t %></option><% }) %>
+          </select>
+          <div class="ajuda">Comece em Simulação, valide em Homologação e só então passe para Produção.</div>
+        </div>
+        <div class="campo"><label class="rotulo">Série</label><input type="text" name="serie" value="<%= emp.serie || '1' %>" maxlength="5" inputmode="numeric"></div>
+        <div class="campo"><label class="rotulo">Próximo nº DPS</label><input type="number" name="proximo_numero" value="<%= emp.proximo_numero || 1 %>" min="1"></div>
+      </div>
+      <label class="check"><input type="checkbox" name="portal_pode_emitir" value="1" <%= emp.portal_pode_emitir == 1 ? 'checked' : '' %>><span>Permitir que o cliente emita pelo portal<small>Os usuários do portal desta empresa poderão emitir notas sozinhos.</small></span></label>
+    </div>
+  </section>
+
+  <div class="acoes">
+    <button class="btn btn-pri"><%- ic('check') %><%- ic('carregando', 16, 'giro') %> Salvar empresa</button>
+    <a class="btn btn-fantasma" href="<%= emp.id ? '/empresas/' + emp.id : '/empresas' %>">Cancelar</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>
