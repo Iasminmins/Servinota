@@ -31,7 +31,7 @@ app.use(express.static(path.join(config.root, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(session({
-  store: new PostgresStore(),
+  store: new SqliteStore(),
   secret: config.secret,
   name: 'emissor.sid',
   resave: false,
