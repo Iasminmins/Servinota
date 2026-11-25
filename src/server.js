@@ -25,11 +25,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/static', express.static(path.join(config.root, 'public'), { maxAge: '1h' }));
+// Local Express serve /css, /js e /img diretamente da pasta public.
+// Na Vercel esses mesmos caminhos são servidos pelo CDN antes da função.
+app.use(express.static(path.join(config.root, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(session({
-  store: new SqliteStore(),
+  store: new PostgresStore(),
   secret: config.secret,
   name: 'emissor.sid',
   resave: false,
@@ -45,6 +47,7 @@ app.use(session({
 app.use(mw.locais);
 app.use(mw.verificaCsrf);
 
+app.use(require('./routes/home'));
 app.use(require('./routes/auth'));
 app.use('/portal', mw.exigeLogin, mw.exigeCliente, require('./routes/portal'));
 app.use('/empresas', mw.exigeLogin, mw.exigeEquipe, require('./routes/empresas'));
